@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+      "allowSyntheticDefaultImports": true,
+      "isolatedModules": false,
+      "target": "ES6",                                  
+      "module": "CommonJS",                               
+      "rootDir": "./src",                                  
+      "resolveJsonModule": true,                        
+      "inlineSourceMap": true,                          
+      "outDir": "./build",                                 
+      "esModuleInterop": true,                            
+      "forceConsistentCasingInFileNames": true,           
+      "strict": false,                                    
+      "skipLibCheck": true,                           
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"], 
+  }
