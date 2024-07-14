@@ -26,11 +26,8 @@ app.use(
     origin: process.env.CLIENT_URL,
     credentials: true,
     optionsSuccessStatus: 200,
-<<<<<<< HEAD
-  }),
-=======
-  })
->>>>>>> 76b41dbf93c0cd52c5893fd8164c02f1bc07e986
+}),
+})
 );
 
 app.use('/books', bookRoute);
