@@ -13,7 +13,7 @@ import bookRoute from './routes/book.route';
 import commentRoute from './routes/comment.route';
 import orderRoute from './routes/order.route';
 import promoCodeRoute from './routes/order.route';
-
+import cors from 'cors';
 const app: Express = express();
 
 app.use(helmet());
@@ -21,13 +21,13 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(fingerprint());
 
-/*app.use(
+app.use(
   cors({
-    origin: config.get("CLIENT_URL"),
+    origin: process.env.CLIENT_URL,
     credentials: true,
     optionsSuccessStatus: 200,
-  })
-);*/
+  }),
+);
 
 app.use('/books', bookRoute);
 app.use('/users', userRoute);
@@ -41,11 +41,11 @@ dataSource
   .initialize()
   .then(() => {
     app.listen(3000, () => {
-      console.log('Server started on port 8000');
+      logger.info('Server started on port 8000');
     });
 
-    console.log('Data Source has been initialized!');
+    logger.info('Data Source has been initialized!');
   })
   .catch((err) => {
-    console.error('Error during Data Source initialization:', err);
+    logger.fatal('Error during Data Source initialization:', err);
   });
