@@ -21,13 +21,13 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(fingerprint());
 
-/*app.use(
+app.use(
   cors({
-    origin: config.get("CLIENT_URL"),
+    origin: process.env.CLIENT_URL,
     credentials: true,
     optionsSuccessStatus: 200,
   })
-);*/
+);
 
 app.use('/books', bookRoute);
 app.use('/users', userRoute);
