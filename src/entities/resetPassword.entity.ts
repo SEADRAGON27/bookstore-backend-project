@@ -10,7 +10,7 @@ export class ResetPasswordEntity {
   token: string;
 
   @Column()
-  expiresAt: Date;
+  expires_at: Date;
 
   @ManyToOne(() => UserEntity, (user) => user.resetPasswordTokens)
   user: UserEntity;

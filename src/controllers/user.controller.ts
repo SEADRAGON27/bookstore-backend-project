@@ -18,8 +18,8 @@ export class UserController {
       logger.info({ createUserDto, fingerprint }, 'Creating a new user succesfully');
     
     } catch (error) {
-      
-        logger.error(error, 'Error creating user');
+     
+      logger.error(error, 'Error creating user');
       next(error);
     
     }
@@ -30,11 +30,11 @@ export class UserController {
       const fingerprint = req.fingerprint.hash;
       const loginUserDTO = req.body;
 
-      const { user, refreshToken } = await this.userService.loginUser(loginUserDTO, fingerprint);
+      const { user, refresh_token } = await this.userService.loginUser(loginUserDTO, fingerprint);
 
       const userResponse = this.userService.buildUserResponse(user);
 
-      res.cookie('refreshToken', refreshToken, {
+      res.cookie('refreshToken', refresh_token, {
         httpOnly: true,
         maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
       });
@@ -44,7 +44,7 @@ export class UserController {
     
     } catch (error) {
       
-        logger.error(error, 'Error logging in user');
+      logger.error(error, 'Error logging in user');
       next(error);
     
     }
@@ -187,10 +187,10 @@ export class UserController {
 
   async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const newPassword = req.body;
+      const resetPasswordDto = req.body;
       const token = req.params.token;
 
-      await this.userService.resetPassword(token, newPassword);
+      await this.userService.resetPassword(token, resetPasswordDto);
 
       res.status(200).send({ message: 'Password has been reset.' });
       logger.info('Resetting password successfully');

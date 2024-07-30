@@ -2,9 +2,9 @@ import { NextFunction, Response } from 'express';
 import { Redis } from 'ioredis';
 import { ExpressRequest } from '../interfaces/expressRequest.interface';
 
-export async function cache(req: ExpressRequest, res: Response, next: NextFunction) {
+export async function cacheMiddleware(req: ExpressRequest, res: Response, next: NextFunction) {
   const key = req.originalUrl;
-  const userId = req.user.id;
+  const userId = req.user ? req.user.id : null;
   const clientRedis = new Redis();
 
   if (userId) return next();

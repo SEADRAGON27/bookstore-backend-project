@@ -1,8 +1,9 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CheckPromoCode {
   @IsNotEmpty()
-  amount: number;
+  @IsNumber()
+  total_sum: number;
 
   @IsNotEmpty()
   code: string;

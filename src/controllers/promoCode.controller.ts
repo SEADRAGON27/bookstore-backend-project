@@ -15,9 +15,13 @@ export class PromoCodeController {
 
       res.status(201).json(promoCode);
       logger.info({ userId, createPromoCodeDto }, 'Creating a new promo code successfully');
+    
     } catch (error) {
+      
       logger.error(error, 'Error creating promo code');
       next(error);
+    
+    
     }
   }
 
@@ -29,9 +33,12 @@ export class PromoCodeController {
 
       res.status(200).json(result);
       logger.info({ checkPromoCodeDto }, 'Checking promo code succesfully');
+    
     } catch (error) {
+      
       logger.error(error, 'Error checking promo code');
       next(error);
+    
     }
   }
 
@@ -55,9 +62,10 @@ export class PromoCodeController {
   async updatePromoCode(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as unknown as number;
+      const userId = req.user.id; 
       const updatePromoCodeDto = req.body;
 
-      const order = await this.promoCodeService.updatePromoCode(id, updatePromoCodeDto);
+      const order = await this.promoCodeService.updatePromoCode(id, userId,updatePromoCodeDto);
 
       res.status(200).json(order);
       logger.info({ id, updatePromoCodeDto }, 'Updating promo code successfully');

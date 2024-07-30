@@ -102,7 +102,7 @@ export class BookController {
       const userId = req.user.id;
       const id = req.params.id as unknown as number;
 
-      const comment = await this.bookService.deleteBookToFavorites(userId, id);
+      const comment = await this.bookService.deleteBookFromFavorites(userId, id);
 
       res.status(200).json(comment);
       logger.info({ userId, id }, 'Deleting book from favorites');
@@ -158,7 +158,7 @@ export class BookController {
 
       await this.bookService.deleteBook(id);
 
-      res.sendStatus(200);
+      res.status(200).json({ message: 'Book has been deleted.' });
       logger.info({ id }, 'Deleting a book successfully');
     
     } catch (error) {
@@ -172,6 +172,7 @@ export class BookController {
   async getBooksLikedByUser(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
+      
       const books = await this.bookService.getBooksLikedByUser(userId);
 
       res.status(200).json(books);
@@ -188,8 +189,9 @@ export class BookController {
   async uploadImage(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const image = req.file;
+      
       const imageLink = await this.bookService.uploadImageS3(image);
-
+      
       res.status(200).json(imageLink);
       logger.info({ image }, 'Uploading image successfully');
     

@@ -38,10 +38,10 @@ export class UserEntity {
     this.password = await hash(this.password, 10);
   }
 
-  @OneToMany(() => RefreshSessionEntity, (refreshSession) => refreshSession.user)
+  @OneToMany(() => RefreshSessionEntity, (refreshSession) => refreshSession.user, { onDelete: 'CASCADE' })
   refresh_session: RefreshSessionEntity[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.user)
+  @OneToMany(() => CommentEntity, (comment) => comment.user, { onDelete: 'CASCADE' })
   comments: CommentEntity[];
 
   @ManyToMany(() => CommentEntity)
@@ -52,13 +52,13 @@ export class UserEntity {
   @JoinTable()
   favorite_books: BookEntity[];
 
-  @OneToMany(() => BookEntity, (book) => book.user)
+  @OneToMany(() => BookEntity, (book) => book.user, { onDelete: 'CASCADE' })
   books: BookEntity[];
 
   @OneToMany(() => ResetPasswordEntity, (token) => token.user)
   resetPasswordTokens: ResetPasswordEntity[];
 
-  @OneToMany(() => OrderEntity, (orders) => orders.user)
+  @OneToMany(() => OrderEntity, (orders) => orders.user, { onDelete: 'CASCADE' })
   orders: OrderEntity[];
 
   @CreateDateColumn()
@@ -67,6 +67,6 @@ export class UserEntity {
   @UpdateDateColumn()
   update_at: Date;
 
-  @OneToMany(() => PromoCodeEntity, (promocode) => promocode.user)
+  @OneToMany(() => PromoCodeEntity, (promocode) => promocode.user, { onDelete: 'CASCADE' })
   promoCodes: PromoCodeEntity[];
 }

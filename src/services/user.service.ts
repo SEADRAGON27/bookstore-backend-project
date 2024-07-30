@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
-import { UserResponse } from '../interfaces/userResponse.interface';
+import { CreateUserResponse, UserResponse } from '../interfaces/userResponse.interface';
 import { RefreshSessionEntity } from '../entities/refreshSession.entity';
 import { CustomError } from '../interfaces/customError';
 import { compare } from 'bcrypt';
@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ResetPasswordEntity } from '../entities/resetPassword.entity';
 import { hash } from 'bcrypt';
 import { Profile } from 'passport-google-oauth20';
+import { PasswordResetDTO } from '../dto/passwordReset.dto';
 
 export class UserService {
   constructor(
@@ -22,7 +23,7 @@ export class UserService {
     private resetPasswordRepository: Repository<ResetPasswordEntity>,
   ) {}
 
-  async createUser(createDto: CreateUserDto, finger_print: string): Promise<{ user: UserEntity; refresh_token: string }> {
+  async createUser(createDto: CreateUserDto, finger_print: string): Promise<CreateUserResponse> {
     if (createDto.confirmedPassword !== createDto.password) throw new CustomError(422, "Password didn't match");
 
     const userByEmail = await this.userRepository.findOneBy({
@@ -38,11 +39,11 @@ export class UserService {
     const newUser = new UserEntity();
     Object.assign(newUser, createDto);
 
-    const refresh_token = this.generateRefreshToken(newUser);
     const token = uuidv4();
 
     newUser.confirmation_token = token;
     const user = await this.userRepository.save(newUser);
+    const refresh_token = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
       finger_print,
@@ -55,7 +56,7 @@ export class UserService {
     return { user, refresh_token };
   }
 
-  async loginUser(loginUserDTO: LoginUserDTO, finger_print: string): Promise<{ user: UserEntity; refreshToken: string }> {
+  async loginUser(loginUserDTO: LoginUserDTO, finger_print: string): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOne({
       where: { email: loginUserDTO.email },
       select: ['id', 'username', 'email', 'password'],
@@ -67,17 +68,17 @@ export class UserService {
 
     if (!isPassword) throw new CustomError(422, 'Password is uncorrect');
 
-    const refreshToken = this.generateRefreshToken(user);
+    const refresh_token = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
       finger_print,
-      refreshToken,
+      refresh_token,
       user,
     });
 
     delete user.password;
 
-    return { user, refreshToken };
+    return { user, refresh_token };
   }
 
   buildUserResponse(user: UserEntity): UserResponse {
@@ -96,6 +97,7 @@ export class UserService {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
       },
       process.env.SECRET_PHRASE_REFRESH_TOKEN,
       { expiresIn: '15d' },
@@ -115,7 +117,7 @@ export class UserService {
     );
   }
 
-  async sendVerificationEmail(userEmail: string, token: string): Promise<void> {
+  async sendVerificationEmail(userEmail: string, token: string) {
     const mailOptions = {
       from: process.env.FROM_EMAIL,
       to: userEmail,
@@ -138,7 +140,7 @@ export class UserService {
     await this.userRepository.delete(id);
   }
 
-  async confirmEmail(token: string, finger_print: string) {
+  async confirmEmail(token: string, finger_print: string): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOne({
       where: { confirmation_token: token },
     });
@@ -162,7 +164,7 @@ export class UserService {
     return user;
   }
 
-  async deleteRefreshSession(refresh_token: string): Promise<void> {
+  async deleteRefreshSession(refresh_token: string) {
     const refreshSession = await this.refreshSessionRepository.findOneBy({
       refresh_token,
     });
@@ -211,7 +213,7 @@ export class UserService {
     };
   }
 
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
 
     if (!user) throw new CustomError(422, 'User is unfound');
@@ -221,7 +223,7 @@ export class UserService {
     const resetPasswordToken = this.resetPasswordRepository.create({
       user,
       token,
-      expiresAt: new Date(Date.now() + 3600000),
+      expires_at: new Date(Date.now() + 3600000),
     });
 
     await this.resetPasswordRepository.save(resetPasswordToken);
@@ -229,7 +231,7 @@ export class UserService {
     await this.sendResetPasswordEmail(user.email, token);
   }
 
-  async sendResetPasswordEmail(email: string, token: string): Promise<void> {
+  async sendResetPasswordEmail(email: string, token: string) {
     const mailOptions = {
       from: process.env.FROM_EMAIL,
       to: email,
@@ -241,17 +243,17 @@ export class UserService {
     await transporter.sendMail(mailOptions);
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(token: string, passwordResetDto: PasswordResetDTO) {
     const resetPasswordToken = await this.resetPasswordRepository.findOne({
       where: { token },
       relations: ['user'],
     });
 
-    if (!resetPasswordToken || resetPasswordToken.expiresAt < new Date()) {
+    if (!resetPasswordToken || resetPasswordToken.expires_at < new Date()) {
       throw new CustomError(403, 'Invalid or expired token');
     }
 
-    const hashedPassword = await hash(newPassword, 10);
+    const hashedPassword = await hash(passwordResetDto.new_password, 10);
     resetPasswordToken.user.password = hashedPassword;
 
     await this.userRepository.save(resetPasswordToken.user);

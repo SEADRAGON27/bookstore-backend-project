@@ -1,10 +1,10 @@
 import { IsNumber, IsISBN, IsNotEmpty, IsOptional } from 'class-validator';
 
-export class createBookDto {
+export class BookDto {
   @IsNotEmpty()
   title: string;
 
-  @IsNotEmpty()
+  @IsNumber()
   pages_quantity: number;
 
   @IsNotEmpty()
@@ -26,7 +26,7 @@ export class createBookDto {
   @IsNotEmpty()
   category: string;
 
-  @IsNotEmpty()
+  @IsNumber()
   publication_year: number;
 
   @IsNotEmpty()
@@ -35,7 +35,7 @@ export class createBookDto {
   @IsNotEmpty()
   author: string;
 
-  @IsNotEmpty()
+  @IsNumber()
   available_books: number;
 
   @IsNotEmpty()

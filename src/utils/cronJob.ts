@@ -1,12 +1,9 @@
 import { LessThan } from 'typeorm';
-import { UserEntity } from '../entities/user.entity';
 import * as cron from 'node-cron';
-import { dataSource } from '../configs/orm.config';
 import { logger } from '../logs/logger';
-import { OrderEntity } from '../entities/order.entity';
+import { orderRepository, userRepository } from './initializeRepositories';
 
 cron.schedule('*/1 * * * *', async () => {
-  const userRepository = dataSource.getRepository(UserEntity);
   const expirationDate = new Date();
   expirationDate.setMinutes(expirationDate.getMinutes() - 15);
 
@@ -24,7 +21,6 @@ cron.schedule('*/1 * * * *', async () => {
 });
 
 cron.schedule('0 0 * * *', async () => {
-  const orderRepository = dataSource.getRepository(OrderEntity);
   const expirationDate = new Date();
   expirationDate.setDate(expirationDate.getDate() - 1);
 

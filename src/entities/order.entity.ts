@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { BookEntity } from './book.entity';
 
 @Entity({ name: 'orders' })
 export class OrderEntity {
@@ -7,7 +8,7 @@ export class OrderEntity {
   id: number;
 
   @Column()
-  name: string;
+  user_name: string;
 
   @Column()
   last_name: string;
@@ -26,9 +27,6 @@ export class OrderEntity {
   payment_method: string;
 
   @Column()
-  amount: number;
-
-  @Column()
   delivery_method: string;
 
   @Column()
@@ -39,7 +37,14 @@ export class OrderEntity {
   promo_code: string;
 
   @Column()
-  total_amount: number;
+  total_sum: number;
+
+  @Column()
+  quantity_of_books: number;
+
+  @ManyToMany(() => BookEntity)
+  @JoinTable()
+  ordered_books: BookEntity[];
 
   @CreateDateColumn()
   @Index()

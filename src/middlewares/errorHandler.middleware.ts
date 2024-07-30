@@ -1,8 +1,7 @@
-import { ErrorRequestHandler, Request, Response } from 'express';
+import { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
 import { CustomError } from '../interfaces/error.interface';
 
-export const errorHandler: ErrorRequestHandler = (error: CustomError, req: Request, res: Response) => {
+export const errorHandler: ErrorRequestHandler = (error: CustomError, req: Request, res: Response, next: NextFunction) => {
   const statusCode = error.status || 500;
-
-  res.status(statusCode).json({ error: error.message || 'Internal server error' });
+  res.status(statusCode).json({ message: error.message || 'Internal server error' });
 };

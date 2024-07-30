@@ -17,6 +17,6 @@ export const dataSource = new DataSource({
   schema: process.env.DATABASE_SHEMA,
   entities: [BookEntity, RefreshSessionEntity, UserEntity, CommentEntity, PromoCodeEntity, OrderEntity, ResetPasswordEntity],
   logging: false,
-  //synchronize: true,
-  migrations: ['src/migrations/**/*{.ts,.js}'],
+  synchronize: true,
+  //migrations: ['src/migrations/**/*{.ts,.js}'],
 });

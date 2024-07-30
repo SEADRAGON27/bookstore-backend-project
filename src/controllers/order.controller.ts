@@ -68,7 +68,7 @@ export class OrderController {
     try {
       const id = req.params.id as unknown as number;
       const updateOrderDto = req.body;
-      const order = await this.orderService.updateOrder(id, updateOrderDto);
+      const order = await this.orderService.updateOrder(id,updateOrderDto);
 
       res.status(200).json(order);
       logger.info({ id, updateOrderDto }, 'Updating order successfully');
@@ -84,7 +84,7 @@ export class OrderController {
   async findAll(req: Request, res: Response, next: NextFunction) {
     try {
       const query = req.query;
-      const orders = this.orderService.findAll(query);
+      const orders = await this.orderService.findAll(query);
 
       res.status(200).json(orders);
       logger.info({ query }, 'Fetching all orders successfully');

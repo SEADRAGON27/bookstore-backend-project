@@ -7,8 +7,7 @@ export class BookEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  @Index()
+  @Column({ unique: true })
   title: string;
 
   @Column()
@@ -20,7 +19,7 @@ export class BookEntity {
   @Column({ type: 'double precision' })
   original_price: number;
 
-  @Column({ type: 'double precision' })
+  @Column({ type: 'double precision', default: 0 })
   discounted_price: number;
 
   @Column()
@@ -47,7 +46,7 @@ export class BookEntity {
   @Index()
   author: string;
 
-  @Column()
+  @Column({ default: 0 })
   @Index('sales_index')
   sales_count: number;
 
@@ -69,8 +68,8 @@ export class BookEntity {
   update_at: Date;
 
   @ManyToOne(() => UserEntity, (user) => user.books, { nullable: true })
-  user: UserEntity;
+  user?: UserEntity;
 
-  @OneToMany(() => CommentEntity, (comment) => comment.book)
-  comments: CommentEntity[];
+  @OneToMany(() => CommentEntity, (comment) => comment.book, { onDelete: 'CASCADE' })
+  comments?: CommentEntity[];
 }

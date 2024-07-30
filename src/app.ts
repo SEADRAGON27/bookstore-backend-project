@@ -12,44 +12,39 @@ import userRoute from './routes/user.route';
 import bookRoute from './routes/book.route';
 import commentRoute from './routes/comment.route';
 import orderRoute from './routes/order.route';
-import promoCodeRoute from './routes/order.route';
+import promoCodeRoute from './routes/promoCode.route';
 import cors from 'cors';
 const app: Express = express();
 
-app.use(helmet());
+//app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
 app.use(fingerprint());
 
-app.use(
+/*app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
     optionsSuccessStatus: 200,
-<<<<<<< HEAD
   }),
-=======
-  })
->>>>>>> 76b41dbf93c0cd52c5893fd8164c02f1bc07e986
-);
+);*/
 
 app.use('/books', bookRoute);
 app.use('/users', userRoute);
 app.use('/comments', commentRoute);
 app.use('/orders', orderRoute);
-app.use('/promoCodes', promoCodeRoute);
+app.use('/promo-codes', promoCodeRoute);
 
 app.use(errorHandler);
 
 dataSource
   .initialize()
   .then(() => {
+    logger.info('Data Source has been initialized!');
     app.listen(3000, () => {
       logger.info('Server started on port 8000');
     });
-
-    logger.info('Data Source has been initialized!');
   })
   .catch((err) => {
-    logger.fatal('Error during Data Source initialization:', err);
+    logger.fatal(`Error during Data Source initialization:${err}`);
   });

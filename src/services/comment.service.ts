@@ -55,7 +55,7 @@ export class CommentService {
 
     const commentIndex = user.favorite_comments.findIndex((commentInFavorites) => commentInFavorites.id === comment.id);
 
-    if (commentIndex) {
+    if (commentIndex >= 0) {
       user.favorite_comments.splice(commentIndex, 1);
       comment.favorites_count--;
 

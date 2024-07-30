@@ -1,16 +1,15 @@
 import { Redis } from 'ioredis';
 import { Brackets, In, MoreThan, Repository, SelectQueryBuilder } from 'typeorm';
 import { BookEntity } from '../entities/book.entity';
-import { BookResponse } from '../interfaces/bookResponce.interface';
+import { BookResponse, BookResponseMainPage, FavoritedBook } from '../interfaces/bookResponce.interface';
 import QueryString from 'qs';
 import { UserEntity } from '../entities/user.entity';
-import { createBookDto } from '../dto/createBook.dto';
+import { BookDto } from '../dto/book.dto';
 import { CustomError } from '../interfaces/customError';
 import { s3 } from '../configs/s3.config';
 import { logger } from '../logs/logger';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import 'dotenv';
-import { updateBookDto } from '../dto/updateBook.dto';
 
 export class BookService {
   constructor(
@@ -19,12 +18,12 @@ export class BookService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
-  async getBooksOnTheMainPage(userId: number, originalUrl: string): Promise<Record<string, BookEntity[]>> {
+  async getBooksOnTheMainPage(userId: number | null, originalUrl: string): Promise<BookResponseMainPage> {
     const today = new Date();
     const lastWeek = new Date();
     lastWeek.setDate(today.getDate() - 7);
 
-    const booksCategories = await Promise.all([
+    const books = await Promise.all([
       this.bookRepository.find({
         where: { created_at: MoreThan(lastWeek), available_books: MoreThan(0) },
         take: 10,
@@ -42,8 +41,13 @@ export class BookService {
       }),
     ]);
 
-    let booksWithFavorited = [];
-    booksCategories.forEach(async (category) => (booksWithFavorited = await this.getPointersLikedBooksByUser(userId, category)));
+    const booksWithFavorited = await Promise.all(
+      books.map(async (books) => {
+        const booksWithPointer = await this.getPointersLikedBooksByUser(userId, books);
+
+        return booksWithPointer;
+      }),
+    );
 
     const booksOnTheMainPage = {
       newBooks: booksWithFavorited[0],
@@ -51,12 +55,12 @@ export class BookService {
       bestsellerBooks: booksWithFavorited[2],
     };
 
-    await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(booksOnTheMainPage));
+    if (!userId) await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(booksOnTheMainPage));
 
     return booksOnTheMainPage;
   }
 
-  async getBooksByCategory(userId: number, category: string, originalUrl: string, query: QueryString.ParsedQs): Promise<BookResponse | null> {
+  async getBooksByCategory(userId: number, category: string, originalUrl: string, query: QueryString.ParsedQs): Promise<BookResponse> {
     const queryBuilder = this.bookRepository.createQueryBuilder('book');
 
     queryBuilder.where('book.category = :category', { category: category, available_books: MoreThan(0) });
@@ -66,7 +70,7 @@ export class BookService {
     return bookListWithCursor;
   }
 
-  async queryBuilder(userId: number, originalUrl: string, queryBuilder: SelectQueryBuilder<BookEntity>, query: QueryString.ParsedQs): Promise<BookResponse | null> {
+  async queryBuilder(userId: number, originalUrl: string, queryBuilder: SelectQueryBuilder<BookEntity>, query: QueryString.ParsedQs): Promise<BookResponse> {
     if (query.genre) queryBuilder.andWhere('book.genre = :genre', { genre: query.genre });
 
     if (query.price) {
@@ -75,13 +79,13 @@ export class BookService {
       queryBuilder.andWhere('book.original_price between :from and :to', { from: priceSorted[0], to: priceSorted[1] });
     }
 
-    if (query.publisher) queryBuilder.andWhere('books.publisher = :publisher', { publisher: query.publisher });
+    if (query.publisher) queryBuilder.andWhere('book.publisher = :publisher', { publisher: query.publisher });
 
     if (query.publication_year) {
       const publicationYear = query.publication_year as string;
-      const puplicationYearSorted = publicationYear.split('-');
+      const publicationYearSorted = publicationYear.split('-');
 
-      queryBuilder.andWhere('book.publication_year beetweem :from and :to', { from: puplicationYearSorted[0], to: publicationYear[1] });
+      queryBuilder.andWhere('book.publication_year between :from and :to', { from: publicationYearSorted[0], to: publicationYearSorted[1] });
     }
 
     if (query.sales_count) queryBuilder.andWhere('book.sales_count >= 100', { sales_count: query.sales_count });
@@ -110,13 +114,13 @@ export class BookService {
       .getMany();
 
     const booksWithFavorited = await this.getPointersLikedBooksByUser(userId, books);
-    const hasNextPage = books.length > pageSize;
+    const hasNextPage = booksWithFavorited.length > pageSize;
 
-    if (hasNextPage) books.pop();
+    if (hasNextPage) booksWithFavorited.pop();
 
-    const nextCursor = hasNextPage ? books[books.length - 1].id : null;
+    const nextCursor = hasNextPage ? booksWithFavorited[booksWithFavorited.length - 1].book.id : null;
 
-    await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(books));
+    if (booksWithFavorited.length >= 1 && !userId) await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(booksWithFavorited));
 
     const bookListWithCursor = {
       books: booksWithFavorited,
@@ -126,11 +130,11 @@ export class BookService {
     return bookListWithCursor;
   }
 
-  async searchBook(userId: number, originalUrl: string, query: QueryString.ParsedQs): Promise<BookResponse | null> {
-    if (query.param) {
+  async searchBook(userId: number, originalUrl: string, query: QueryString.ParsedQs): Promise<BookResponse> {
+    if (query.text) {
       const queryBuilder = this.bookRepository.createQueryBuilder('book');
 
-      const searchParam = query.param as string;
+      const searchParam = query.text as string;
       const searchParamToLowerCase = searchParam.toLowerCase().split('-');
 
       searchParamToLowerCase.forEach((element, index) => {
@@ -159,6 +163,8 @@ export class BookService {
       relations: ['comments', 'comments.parentComment'],
     });
 
+    if (!book) throw new CustomError(404, "Book doesn't exist");
+
     return book;
   }
 
@@ -169,7 +175,7 @@ export class BookService {
       relations: ['favorite_books'],
     });
 
-    const isNotFavorited = user.favorite_books.findIndex((commentInFavorites) => commentInFavorites.id === book.id) === -1;
+    const isNotFavorited = user.favorite_books.findIndex((bookInFavorites) => bookInFavorites.id === book.id) === -1;
 
     if (isNotFavorited) {
       user.favorite_books.push(book);
@@ -182,17 +188,18 @@ export class BookService {
     return book;
   }
 
-  async deleteBookToFavorites(userId: number, id: number): Promise<BookEntity> {
+  async deleteBookFromFavorites(userId: number, id: number): Promise<BookEntity> {
     const book = await this.bookRepository.findOneBy({ id });
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['favorite_books'],
     });
 
-    const commentIndex = user.favorite_comments.findIndex((commentInFavorites) => commentInFavorites.id === book.id);
+    const bookIndex = user.favorite_books.findIndex((bookInFavorites) => bookInFavorites.id === book.id);
+    console.log(bookIndex);
 
-    if (commentIndex) {
-      user.favorite_comments.splice(commentIndex, 1);
+    if (bookIndex >= 0) {
+      user.favorite_books.splice(bookIndex, 1);
       book.favorites_count--;
 
       await this.userRepository.save(user);
@@ -202,7 +209,11 @@ export class BookService {
     return book;
   }
 
-  async createBook(userId: number, createBookDto: createBookDto): Promise<BookEntity> {
+  async createBook(userId: number, createBookDto: BookDto): Promise<BookEntity> {
+    const bookTitle = await this.bookRepository.findOneBy({ title: createBookDto.title });
+
+    if (bookTitle) throw new CustomError(403, 'Book title already exists, please select another one');
+
     const book = new BookEntity();
     Object.assign(book, createBookDto);
 
@@ -211,7 +222,7 @@ export class BookService {
     return await this.bookRepository.save(book);
   }
 
-  async updateBook(userId: number, id: number, updateBookDTO: updateBookDto): Promise<BookEntity> {
+  async updateBook(userId: number, id: number, updateBookDTO: BookDto): Promise<BookEntity> {
     const book = await this.bookRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -238,7 +249,7 @@ export class BookService {
     await this.deleteImageS3(book.cover_image_link);
   }
 
-  async getPointersLikedBooksByUser(userId: number, books: BookEntity[]) {
+  async getPointersLikedBooksByUser(userId: number, books: BookEntity[]): Promise<FavoritedBook[]> {
     let favoriteIds: number[] = [];
 
     if (userId) {
@@ -253,22 +264,19 @@ export class BookService {
     const booksWithFavorited = books.map((book) => {
       const favorited = favoriteIds.includes(book.id);
 
-      return { ...book, favorited };
+      return { book, favorited };
     });
 
     return booksWithFavorited;
   }
 
-  async uploadImageS3(file: Express.Multer.File) {
-    if (!file) new CustomError(400, 'No file uploaded.');
-
+  async uploadImageS3(file: Express.Multer.File): Promise<string> {
     const uploadParams = {
       Bucket: process.env.AWS_BUCKET_NAME!,
       Key: file.originalname,
       Body: file.buffer,
     };
 
-    console.log(uploadParams);
     const command = new PutObjectCommand(uploadParams);
 
     await s3.send(command);
@@ -278,7 +286,7 @@ export class BookService {
     return imageUrl;
   }
 
-  async deleteImageS3(coverImageLink: string) {
+  async deleteImageS3(coverImageLink: string): Promise<void> {
     const s3UrlPrefix = `https://s3.${process.env.AWS_REGION}.amazonaws.com/${process.env.AWS_BUCKET_NAME}`;
 
     const imagePath = coverImageLink.replace(s3UrlPrefix, '').slice(1);
@@ -293,7 +301,7 @@ export class BookService {
     logger.info(`File deleted successfully ${coverImageLink}`);
   }
 
-  async getBooksLikedByUser(userId: number) {
+  async getBooksLikedByUser(userId: number): Promise<BookEntity[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['favorite_books'],
@@ -301,6 +309,8 @@ export class BookService {
 
     const ids = user.favorite_books.map((el) => el.id);
 
-    return await this.bookRepository.find({ where: { id: In(ids) } });
+    const books = await this.bookRepository.find({ where: { id: In(ids) } });
+
+    return books;
   }
 }

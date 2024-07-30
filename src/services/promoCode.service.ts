@@ -1,11 +1,10 @@
 import { Repository } from 'typeorm';
 import { PromoCodeEntity } from '../entities/promocode.entity';
-import { createPromoCode } from '../dto/createPromoCode.dto';
+import { PromoCode } from '../dto/createPromoCode.dto';
 import { UserEntity } from '../entities/user.entity';
 import { CustomError } from '../interfaces/customError';
 import QueryString from 'qs';
 import { CheckPromoCode } from '../dto/checkPromoCode.dto';
-import { updatePromoCode } from '../dto/updatePromCode.dto';
 
 export class PromoCodeService {
   constructor(
@@ -13,7 +12,7 @@ export class PromoCodeService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
-  async createPromoCode(userId: number, createPromoCodeDto: createPromoCode): Promise<PromoCodeEntity> {
+  async createPromoCode(userId: number, createPromoCodeDto: PromoCode): Promise<PromoCodeEntity> {
     const promoCode = new PromoCodeEntity();
     Object.assign(promoCode, createPromoCodeDto);
 
@@ -22,17 +21,21 @@ export class PromoCodeService {
     return await this.promoCodeRepository.save(promoCode);
   }
 
-  async updatePromoCode(id: number, updatePromoCodeDto: updatePromoCode): Promise<PromoCodeEntity> {
-    const promoCode = await this.promoCodeRepository.findOneBy({ id });
+  async updatePromoCode(id: number, userId: number, updatePromoCodeDto: PromoCode): Promise<PromoCodeEntity> {
+    const promoCode = await this.promoCodeRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
 
     if (!promoCode) throw new CustomError(404, "Promo code doesn't exit.");
 
+    promoCode.user.id = userId;
     Object.assign(promoCode, updatePromoCodeDto);
 
     return await this.promoCodeRepository.save(promoCode);
   }
 
-  async deletePromoCode(id: number): Promise<void> {
+  async deletePromoCode(id: number) {
     const promoCode = await this.promoCodeRepository.findOneBy({ id });
 
     if (!promoCode) throw new CustomError(404, "Promo code doesn't exist.");
@@ -40,24 +43,24 @@ export class PromoCodeService {
     await this.promoCodeRepository.delete({ id });
   }
 
-  async checkPromoCode(checkPromoCodeDto: CheckPromoCode): Promise<{ discountedAmount: number; discount: number }> {
+  async checkPromoCode(checkPromoCodeDto: CheckPromoCode): Promise<{ totalSum: number }> {
     const validPromoCode = await this.promoCodeRepository.findOne({ where: { code: checkPromoCodeDto.code, is_active: true } });
 
     if (!validPromoCode) throw new CustomError(403, 'Promo code is unvalid.');
 
     if (validPromoCode.expiration_date && validPromoCode.expiration_date < new Date()) throw new CustomError(403, 'Promo code has expired');
 
-    if (validPromoCode.min_order_amount && checkPromoCodeDto.amount < validPromoCode.min_order_amount) throw new CustomError(403, `Minimum order amount for this promotional code: ${validPromoCode.min_order_amount}`);
+    if (validPromoCode.min_order_amount && checkPromoCodeDto.total_sum < validPromoCode.min_order_amount) throw new CustomError(403, `Minimum order amount for this promotional code: ${validPromoCode.min_order_amount}`);
 
-    let discount = (checkPromoCodeDto.amount * validPromoCode.discount_percent) / 100;
+    let discount = (checkPromoCodeDto.total_sum * validPromoCode.discount_percent) / 100;
 
     if (validPromoCode.max_discount && discount > validPromoCode.max_discount) {
       discount = validPromoCode.max_discount;
     }
 
-    const discountedAmount = checkPromoCodeDto.amount - discount;
+    const totalSum = checkPromoCodeDto.total_sum - discount;
 
-    return { discountedAmount, discount };
+    return { totalSum };
   }
 
   async findAll(query: QueryString.ParsedQs): Promise<PromoCodeEntity[]> {
