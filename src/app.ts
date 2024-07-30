@@ -16,18 +16,18 @@ import promoCodeRoute from './routes/promoCode.route';
 import cors from 'cors';
 const app: Express = express();
 
-//app.use(helmet());
+app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
 app.use(fingerprint());
 
-/*app.use(
+app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
     optionsSuccessStatus: 200,
   }),
-);*/
+);
 
 app.use('/books', bookRoute);
 app.use('/users', userRoute);
