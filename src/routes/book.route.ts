@@ -27,6 +27,6 @@ router.get('/liked/all', authMiddleware, authGuard, bookController.getBooksLiked
 router.post('/upload-image', authMiddleware, chechRoleGuard, upload.single('image'), bookController.uploadImage.bind(bookController));
 router.post('/delete-image', authMiddleware, chechRoleGuard, bookController.deleteImage.bind(bookController));
 router.post('/:id/favorite', authMiddleware, authGuard, bookController.addBookToFavorites.bind(bookController));
-router.post('/:id/unfavorite', authMiddleware, authGuard, bookController.deleteBookToFavorites.bind(bookController));
+router.post('/:id/unfavorite', authMiddleware, authGuard, bookController.deleteBookFromFavorites.bind(bookController));
 
 export default router;
