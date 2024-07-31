@@ -35,22 +35,16 @@ describe('BookController', () => {
 
   beforeAll(async () => {
     const app = express();
-
-    app.use(helmet());
-    app.use(cookieParser());
+    
     app.use(express.json());
-    app.use(fingerprint());
 
     app.use('/books', bookRoute);
-    app.use('/users', userRoute);
-    app.use('/comments', commentRoute);
-    app.use('/orders', orderRoute);
-    app.use('/promo-codes', promoCodeRoute);
 
     app.use(errorHandler);
 
     server = app;
     container = await new PostgreSqlContainer().withExposedPorts(5432).start();
+    
     dataSource.setOptions({
       host: container.getHost(),
       port: container.getMappedPort(5432),
