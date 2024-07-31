@@ -79,7 +79,7 @@ export class BookController {
     }
   }
 
-  async addBookToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
+  async addBookFromFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
       const id = req.params.id as unknown as number;
