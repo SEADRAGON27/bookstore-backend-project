@@ -87,7 +87,7 @@ export class CommentController {
 
       await this.commentService.deleteComment(userId, id);
 
-      res.status(200);
+      res.sendStatus(200);
       logger.info({ userId, id }, 'Deleting comment successfully');
     
     } catch (error) {
