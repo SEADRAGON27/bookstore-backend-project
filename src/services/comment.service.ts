@@ -166,7 +166,7 @@ export class CommentService {
       from: process.env.FROM_EMAIL,
       to: parentComment.user.email,
       subject: `Answear on your comment from user:${username}`,
-      text: `Click here to watch answear ${process.env.CLIENT_URL}/books/${bookId}`,
+      text: `Click here to watch answear ${process.env.CLIENT_URL}books/${bookId}`,
     };
 
     comment = await this.commentRepository.save(comment);
