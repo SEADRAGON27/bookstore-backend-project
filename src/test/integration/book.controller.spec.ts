@@ -21,7 +21,6 @@ describe('BookController', () => {
 
   beforeAll(async () => {
     const app = express();
-
     app.use(express.json());
 
     app.use('/books', bookRoute);
@@ -30,7 +29,6 @@ describe('BookController', () => {
 
     server = app;
     container = await new PostgreSqlContainer().withExposedPorts(5432).start();
-
     dataSource.setOptions({
       host: container.getHost(),
       port: container.getMappedPort(5432),

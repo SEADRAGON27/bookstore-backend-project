@@ -1,7 +1,7 @@
 import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
 
-@Entity({ name: 'refresh_session' })
+@Entity({ name: 'refresh_sessions' })
 export class RefreshSessionEntity {
   @PrimaryGeneratedColumn()
   id: string;

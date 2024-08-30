@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express';
 import { logger } from '../logs/logger';
 import { UserService } from '../services/user.service.js';
 import { ExpressRequest } from '../interfaces/expressRequest.interface';
-import { Profile, VerifyCallback } from 'passport-google-oauth20';
 
 export class UserController {
   constructor(private userService: UserService) {}
