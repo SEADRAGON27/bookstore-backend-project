@@ -3,6 +3,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.609.0",
     "@aws-sdk/lib-storage": "^3.609.0",
+    "@nestjs/mapped-types": "^2.0.5",
     "aws-sdk-client-mock": "^4.0.1",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
@@ -64,14 +65,14 @@
   "name": "backend",
   "scripts": {
     "dev": "npx nodemon src/app.ts",
-    "start": " tsc && node build/app.js",
+    "start": "tsc && node build/app.js",
     "test": "jest",
     "lint": "npx eslint src/**/*.ts --fix",
-    "typeorm": "ts-node ./node_modules/typeorm/cli",
+    "typeorm": "npx ts-node ./node_modules/typeorm/cli",
     "typeorm:create-migration": "npm run typeorm -- migration:create ./src/migrations/%npm_config_name%",
     "typeorm:generate-migration": "npm run typeorm -- -d ./src/configs/orm.config.ts migration:generate ./src/migrations/%npm_config_name%",
     "typeorm:run-migrations": "npm run typeorm migration:run -- -d ./src/configs/orm.config.ts",
-    "typeorm:revert-migrations": "npm run typeorm migration:revert -- -d src/configs/orm.config.ts"
+    "typeorm:revert-migrations": "npm run typeorm migration:revert -- -d ./src/configs/orm.config.ts"
   },
   "version": "1.0.0"
 }

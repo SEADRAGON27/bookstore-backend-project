@@ -62,10 +62,10 @@ export class PromoCodeController {
   async updatePromoCode(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as unknown as number;
-      const userId = req.user.id; 
+      const userId = req.user.id;
       const updatePromoCodeDto = req.body;
 
-      const order = await this.promoCodeService.updatePromoCode(id, userId,updatePromoCodeDto);
+      const order = await this.promoCodeService.updatePromoCode(id, userId, updatePromoCodeDto);
 
       res.status(200).json(order);
       logger.info({ id, updatePromoCodeDto }, 'Updating promo code successfully');

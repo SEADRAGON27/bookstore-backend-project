@@ -5,12 +5,12 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { chechRoleGuard } from '../guards/checkRole.guard';
 import { validation } from '../middlewares/validation.middleware';
 import { PromoCode } from '../dto/createPromoCode.dto';
-import { promoCodeRepository, userRepository } from '../utils/initializeRepositories';
+import { promoCodeRepository } from '../utils/initializeRepositories';
 import { CheckPromoCode } from '../dto/checkPromoCode.dto';
 
 const router = Router();
 
-const promoCodeService = new PromoCodeService(promoCodeRepository, userRepository);
+const promoCodeService = new PromoCodeService(promoCodeRepository);
 const promoCodeController = new PromoCodeController(promoCodeService);
 
 router.post('/create', authMiddleware, chechRoleGuard, validation(PromoCode), promoCodeController.createPromoCode.bind(promoCodeController));

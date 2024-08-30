@@ -2,13 +2,13 @@ import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber } from 'class-
 
 export class OrderDto {
   @IsNotEmpty()
-  user_name: string;
+  userName: string;
 
   @IsNotEmpty()
-  last_name: string;
+  lastName: string;
 
   @IsPhoneNumber('UA')
-  phone_number: string;
+  phoneNumber: string;
 
   @IsEmail({}, { message: 'Email must be a valid.' })
   email: string;
@@ -17,23 +17,23 @@ export class OrderDto {
   city: string;
 
   @IsNotEmpty()
-  payment_method: string;
+  paymentMethod: string;
 
   @IsNumber()
-  total_sum:number
+  totalSum: number;
 
   @IsNotEmpty()
-  books : number[]
-  
-  @IsNotEmpty()
-  delivery_method: string;
+  books: number[];
 
   @IsNotEmpty()
-  branch_address: string;
+  deliveryMethod: string;
+
+  @IsNotEmpty()
+  branchAddress: string;
 
   @IsOptional()
-  promo_code: string;
+  promoCode: string;
 
   @IsNumber()
-  quantity_of_books:number
+  quantityOfBooks: number;
 }

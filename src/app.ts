@@ -13,6 +13,12 @@ import bookRoute from './routes/book.route';
 import commentRoute from './routes/comment.route';
 import orderRoute from './routes/order.route';
 import promoCodeRoute from './routes/promoCode.route';
+import authorRoute from './routes/author.route';
+import categoryRoute from './routes/category.route';
+import genreRoute from './routes/genre.route';
+import publisherRoute from './routes/publisher.route';
+import languageRoute from './routes/language.route';
+
 import cors from 'cors';
 const app: Express = express();
 
@@ -34,6 +40,11 @@ app.use('/users', userRoute);
 app.use('/comments', commentRoute);
 app.use('/orders', orderRoute);
 app.use('/promo-codes', promoCodeRoute);
+app.use('/authors', authorRoute);
+app.use('/categories', categoryRoute);
+app.use('/languages', languageRoute);
+app.use('/genres', genreRoute);
+app.use('/publishers', publisherRoute);
 
 app.use(errorHandler);
 
@@ -46,5 +57,6 @@ dataSource
     });
   })
   .catch((err) => {
+    console.log(err);
     logger.fatal(`Error during Data Source initialization:${err}`);
   });

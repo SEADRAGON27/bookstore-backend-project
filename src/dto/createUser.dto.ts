@@ -2,14 +2,22 @@ import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
-  readonly username: string;
+  username: string;
 
   @IsEmail({}, { message: 'Email must be a valid.' })
-  readonly email: string;
+  email: string;
 
   @IsNotEmpty()
-  readonly password: string;
+  password: string;
 
   @IsNotEmpty()
-  readonly confirmedPassword: string;
+  confirmedPassword: string;
+}
+
+export class CreateUserGoogleDto {
+  @IsNotEmpty()
+  username: string;
+
+  @IsNotEmpty()
+  token: string;
 }

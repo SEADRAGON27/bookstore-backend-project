@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { CreateUserResponse, UserResponse } from '../interfaces/userResponse.interface';
@@ -5,15 +6,14 @@ import { RefreshSessionEntity } from '../entities/refreshSession.entity';
 import { CustomError } from '../interfaces/customError';
 import { compare } from 'bcrypt';
 import { sign, verify } from 'jsonwebtoken';
-import { CreateUserDto } from '../dto/createUser.dto';
-import { LoginUserDTO } from '../dto/loginUser.dto';
-import { UpdateUserDTO } from '../dto/updateUser.dto';
+import { CreateUserDto, CreateUserGoogleDto } from '../dto/createUser.dto';
+import { LoginUserDto } from '../dto/loginUser.dto';
+import { UpdateUserDto } from '../dto/updateUser.dto';
 import { AuthTokens } from '../types/authTokens.type';
 import { transporter } from '../configs/nodemailer.config';
 import { v4 as uuidv4 } from 'uuid';
 import { ResetPasswordEntity } from '../entities/resetPassword.entity';
 import { hash } from 'bcrypt';
-import { Profile } from 'passport-google-oauth20';
 import { PasswordResetDTO } from '../dto/passwordReset.dto';
 
 export class UserService {
@@ -23,62 +23,64 @@ export class UserService {
     private resetPasswordRepository: Repository<ResetPasswordEntity>,
   ) {}
 
-  async createUser(createDto: CreateUserDto, finger_print: string): Promise<CreateUserResponse> {
-    if (createDto.confirmedPassword !== createDto.password) throw new CustomError(422, "Password didn't match");
+  async createUser(createUserDto: CreateUserDto, fingerprint: string): Promise<void> {
+    if (createUserDto.confirmedPassword !== createUserDto.password) throw new CustomError(422, "Password didn't match");
 
     const userByEmail = await this.userRepository.findOneBy({
-      email: createDto.email,
+      email: createUserDto.email,
     });
 
     const userByName = await this.userRepository.findOneBy({
-      username: createDto.username,
+      username: createUserDto.username,
     });
 
-    if (userByEmail || userByName) throw new CustomError(422, 'name or email are taken');
+    if (userByEmail || userByName) throw new CustomError(422, 'Name or email is taken');
 
     const newUser = new UserEntity();
-    Object.assign(newUser, createDto);
+    Object.assign(newUser, createUserDto);
 
     const token = uuidv4();
 
-    newUser.confirmation_token = token;
+    newUser.confirmationToken = token;
+    newUser.password = await hash(createUserDto.password, 10);
+
     const user = await this.userRepository.save(newUser);
-    const refresh_token = this.generateRefreshToken(user);
+    const refreshToken = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
-      finger_print,
-      refresh_token,
+      fingerprint,
+      refreshToken,
       user,
     });
 
-    await this.sendVerificationEmail(user.email, user.confirmation_token);
-
-    return { user, refresh_token };
+    //await this.sendVerificationEmail(user.email, user.confirmationToken);
   }
 
-  async loginUser(loginUserDTO: LoginUserDTO, finger_print: string): Promise<CreateUserResponse> {
+  async loginUser(loginUserDto: LoginUserDto, fingerprint: string): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOne({
-      where: { email: loginUserDTO.email },
-      select: ['id', 'username', 'email', 'password'],
+      where: { email: loginUserDto.email },
+      select: ['id', 'username', 'password', 'email', 'role', 'isConfirmed'],
     });
+
+    if (user.isConfirmed === false) throw new CustomError(422, 'Email is not confirmed');
 
     if (!user) throw new CustomError(422, 'User is unfound');
 
-    const isPassword = await compare(loginUserDTO.password, user.password);
+    const isPassword = await compare(loginUserDto.password, user.password);
 
     if (!isPassword) throw new CustomError(422, 'Password is uncorrect');
 
-    const refresh_token = this.generateRefreshToken(user);
+    const refreshToken = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
-      finger_print,
-      refresh_token,
+      fingerprint,
+      refreshToken,
       user,
     });
 
     delete user.password;
 
-    return { user, refresh_token };
+    return { user, refreshToken };
   }
 
   buildUserResponse(user: UserEntity): UserResponse {
@@ -122,66 +124,88 @@ export class UserService {
       from: process.env.FROM_EMAIL,
       to: userEmail,
       subject: 'Confirm Email Address',
-      text: `Please click on the link to confirm email ${process.env.CLIENT_URL}confirm/${token}`,
+      text: `Please click on the link to confirm email ${process.env.CLIENT_URL}confirm-email?token=${token}`,
     };
 
     await transporter.sendMail(mailOptions);
   }
 
-  async updateUser(id: number, updateUserDTO: UpdateUserDTO): Promise<UserEntity> {
+  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOneBy({ id });
-    Object.assign(user, updateUserDTO);
+    const token = uuidv4();
 
-    return await this.userRepository.save(user);
+    if (updateUserDto.email) {
+      user.confirmationToken = token;
+      await this.userRepository.save(user);
+      await this.sendVerificationEmail(updateUserDto.email, token);
+
+      return null;
+    }
+
+    if (updateUserDto.username) {
+      const username = updateUserDto.username;
+      const userByName = await this.userRepository.findOneBy({ username });
+
+      if (userByName) throw new CustomError(422, 'Username is taken');
+
+      user.username = updateUserDto.username;
+
+      const updateUser = await this.userRepository.save(user);
+      const refreshToken = this.generateRefreshToken(updateUser);
+
+      delete updateUser.password;
+
+      return { user: { ...updateUser }, refreshToken };
+    }
   }
 
-  async deleteUser(id: number): Promise<void> {
-    await this.refreshSessionRepository.delete(id);
+  async deleteUser(id: string): Promise<void> {
     await this.userRepository.delete(id);
   }
 
-  async confirmEmail(token: string, finger_print: string): Promise<CreateUserResponse> {
+  async confirmEmail(token: string, fingerprint: string): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOne({
-      where: { confirmation_token: token },
+      where: { confirmationToken: token },
     });
 
-    const { refresh_token } = await this.refreshSessionRepository.findOne({
-      where: { finger_print },
+    const { refreshToken } = await this.refreshSessionRepository.findOne({
+      where: { fingerprint },
     });
 
-    if (!user && !refresh_token) throw new CustomError(403, 'Invalid confirmation token');
+    if (!user && !refreshToken) throw new CustomError(403, 'Invalid confirmation token');
 
-    user.is_confirmed = true;
-    user.confirmation_token = null;
-    this.userRepository.save(user);
+    user.isConfirmed = true;
+    user.confirmationToken = null;
+    await this.userRepository.save(user);
+    delete user.password;
 
-    return { user, refresh_token };
+    return { user, refreshToken };
   }
 
-  async getUser(id: number) {
+  async getUser(id: string) {
     const user = await this.userRepository.findOneBy({ id });
 
     return user;
   }
 
-  async deleteRefreshSession(refresh_token: string) {
-    const refreshSession = await this.refreshSessionRepository.findOneBy({
-      refresh_token,
+  async deleteRefreshSession(refreshToken: string) {
+    const { id } = await this.refreshSessionRepository.findOneBy({
+      refreshToken,
     });
 
-    if (refreshSession) await this.refreshSessionRepository.delete(refreshSession.id);
+    if (id) await this.refreshSessionRepository.delete(id);
   }
 
-  async refresh(currentRefreshToken: string, finger_print: string): Promise<AuthTokens> {
+  async refresh(currentRefreshToken: string, fingerprint: string): Promise<AuthTokens> {
     if (!currentRefreshToken) throw new CustomError(401, 'Not authorized');
 
     const refreshSession = await this.refreshSessionRepository.findOneBy({
-      refresh_token: currentRefreshToken,
+      refreshToken: currentRefreshToken,
     });
 
     if (!refreshSession) throw new CustomError(401, 'Not authorized');
 
-    if (refreshSession.finger_print !== finger_print) throw new CustomError(403, 'Forbiden');
+    if (refreshSession.fingerprint !== fingerprint) throw new CustomError(403, 'Forbiden');
 
     let payload;
 
@@ -194,22 +218,22 @@ export class UserService {
     await this.refreshSessionRepository.delete(refreshSession.id);
 
     const user = await this.userRepository.findOneBy({
-      username: payload.user,
+      username: payload.id,
     });
 
     const accessToken: string = this.generateAccessToken(user);
-    const refresh_token: string = this.generateRefreshToken(user);
+    const refreshToken: string = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
-      finger_print,
-      refresh_token,
+      fingerprint,
+      refreshToken,
       user,
     });
 
     return {
       accessToken,
-      refresh_token,
-      tokenExpiration: Number(process.env.ACCESS_TOKEN_EXPIRATION_30MINUTES),
+      refreshToken,
+      tokenExpiration: +process.env.ACCESS_TOKEN_EXPIRATION_30MINUTES,
     };
   }
 
@@ -223,7 +247,7 @@ export class UserService {
     const resetPasswordToken = this.resetPasswordRepository.create({
       user,
       token,
-      expires_at: new Date(Date.now() + 3600000),
+      expiresAt: new Date(Date.now() + 3600000),
     });
 
     await this.resetPasswordRepository.save(resetPasswordToken);
@@ -237,7 +261,7 @@ export class UserService {
       to: email,
       subject: 'Confirm Email Address',
       text: `To reset your password, please click the following link: 
-             ${process.env.CLIENT_URL}reset-password/${token}`,
+             ${process.env.CLIENT_URL}reset-password?token=${token}`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -249,41 +273,63 @@ export class UserService {
       relations: ['user'],
     });
 
-    if (!resetPasswordToken || resetPasswordToken.expires_at < new Date()) {
+    if (!resetPasswordToken || resetPasswordToken.expiresAt < new Date()) {
       throw new CustomError(403, 'Invalid or expired token');
     }
 
-    const hashedPassword = await hash(passwordResetDto.new_password, 10);
+    const hashedPassword = await hash(passwordResetDto.newPassword, 10);
     resetPasswordToken.user.password = hashedPassword;
 
     await this.userRepository.save(resetPasswordToken.user);
     await this.resetPasswordRepository.delete(resetPasswordToken.id);
   }
 
-  async finishGoogleAuthification(userId: number, finger_print: string) {
-    const user = await this.userRepository.findOneBy({ id: userId });
-    const refresh_token = this.generateRefreshToken(user);
+  async finishGoogleAuth(createUserGoogleDto: CreateUserGoogleDto, email: string, fingerprint: string): Promise<CreateUserResponse> {
+    const userByName = await this.userRepository.findOneBy({ username: createUserGoogleDto.username });
+    const user = await this.userRepository.findOneBy({ email });
+
+    if (userByName?.username && user?.username && userByName.username === user.username) {
+      const refreshToken = this.generateRefreshToken(user);
+
+      await this.refreshSessionRepository.save({
+        fingerprint,
+        refreshToken,
+        user,
+      });
+
+      return { refreshToken, user };
+    }
+
+    if (userByName) throw new CustomError(422, 'Name is taken');
+
+    if (!user) {
+      let user = new UserEntity();
+      Object.assign(user, createUserGoogleDto);
+
+      user.isConfirmed = true;
+      user.email = email;
+      const createdUser = await this.userRepository.save(user);
+
+      const refreshToken = this.generateRefreshToken(createdUser);
+
+      await this.refreshSessionRepository.save({
+        fingerprint,
+        refreshToken,
+        user: { ...createdUser },
+      });
+      delete createdUser.password;
+
+      return { refreshToken, user: { ...createdUser } };
+    }
+
+    const refreshToken = this.generateRefreshToken(user);
 
     await this.refreshSessionRepository.save({
-      finger_print,
-      refresh_token,
+      fingerprint,
+      refreshToken,
       user,
     });
 
-    return { user, refresh_token };
-  }
-
-  async findOrCreate(profile: Profile) {
-    const IsUser = await this.userRepository.findOneBy({ username: profile.id });
-
-    if (IsUser) return IsUser;
-
-    const user = new UserEntity();
-    user.email = profile.emails[0].value;
-    user.username = profile.displayName;
-    user.google_id = profile.id;
-    await this.userRepository.save(user);
-
-    return user;
+    return { user, refreshToken };
   }
 }

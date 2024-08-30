@@ -49,7 +49,7 @@ export class OrderController {
 
   async deleteOrder(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       await this.orderService.deleteOrder(id);
 
@@ -66,9 +66,9 @@ export class OrderController {
 
   async updateOrder(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-      const id = req.params.id as unknown as number;
+      const id = req.params.idr;
       const updateOrderDto = req.body;
-      const order = await this.orderService.updateOrder(id,updateOrderDto);
+      const order = await this.orderService.updateOrder(id, updateOrderDto);
 
       res.status(200).json(order);
       logger.info({ id, updateOrderDto }, 'Updating order successfully');

@@ -15,7 +15,7 @@ export async function authMiddleware(req: ExpressRequest, res: Response, next: N
   try {
     const token = accessToken.split(' ')?.[1];
     const decodedAccessToken = verify(token, process.env.SECRET_PHRASE_ACCESS_TOKEN) as JwtPayload;
-    const id = decodedAccessToken.id as number;
+    const id = decodedAccessToken.id as string;
     req.user = await userRepository.findOneBy({ id });
     next();
   } catch (error) {

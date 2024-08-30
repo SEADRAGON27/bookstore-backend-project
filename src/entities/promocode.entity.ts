@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { UserEntity } from './user.entity';
 
 @Entity({ name: 'promo_codes' })
-@Index(['code', 'is_active'])
+@Index(['code', 'isActive'])
 export class PromoCodeEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -10,30 +10,30 @@ export class PromoCodeEntity {
   @Column({ unique: true })
   code: string;
 
-  @Column()
-  @Index()
-  discount_percent: number;
+  @Column({ name: 'discount_percent' })
+  @Index('discount_percent_index')
+  discountPercent: number;
 
   @Column({ nullable: true })
-  @Index()
-  max_discount: number;
+  @Index('max_discount_index')
+  maxDiscount: number;
 
   @Column({ nullable: true })
-  @Index()
-  min_order_amount: number;
+  @Index('min_order_amount')
+  minOrderAmount: number;
 
-  @Column({ default: true })
-  is_active: boolean;
+  @Column({ default: true, name: 'is_active' })
+  isActive: boolean;
 
-  @Column({ nullable: true })
-  expiration_date: Date;
+  @Column({ nullable: true, name: 'expiration_date' })
+  expirationDate: Date;
 
-  @CreateDateColumn()
-  @Index()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  @Index('created_at_promo_code_index')
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   @ManyToOne(() => UserEntity, (user) => user.promoCodes, { onDelete: 'CASCADE' })
   user: UserEntity;

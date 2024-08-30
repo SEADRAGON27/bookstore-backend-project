@@ -5,60 +5,70 @@ import { BookEntity } from './book.entity';
 @Entity({ name: 'orders' })
 export class OrderEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column()
-  user_name: string;
+  username: string;
 
-  @Column()
-  last_name: string;
+  @Column({ name: 'last_name' })
+  lastName: string;
 
-  @Column()
-  phone_number: string;
+  @Column({ name: 'phone_number' })
+  phoneNumber: string;
 
   @Column()
   email: string;
 
   @Column()
-  @Index()
+  @Index('city_index')
   city: string;
 
-  @Column()
-  payment_method: string;
+  @Column({ name: 'payment_method' })
+  paymentMethod: string;
 
-  @Column()
-  delivery_method: string;
+  @Column({ name: 'delivery_method' })
+  deliveryMethod: string;
 
-  @Column()
-  @Index()
-  branch_address: string;
+  @Column({ name: 'branch_address' })
+  @Index('branch_address_index')
+  branchAddress: string;
 
-  @Column({ nullable: true })
-  promo_code: string;
+  @Column({ nullable: true, name: 'promo_code' })
+  promoCode: string;
 
-  @Column()
-  total_sum: number;
+  @Column({ name: 'total_sum' })
+  totalSum: number;
 
-  @Column()
-  quantity_of_books: number;
+  @Column({ name: 'quantity_of_books' })
+  quantityOfBooks: number;
 
   @ManyToMany(() => BookEntity)
-  @JoinTable()
-  ordered_books: BookEntity[];
+  @JoinTable({
+    name: 'order_books',
+    joinColumn: {
+      name: 'order_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'book_id',
+      referencedColumnName: 'id',
+    },
+  })
+  orderedBooks: BookEntity[];
 
-  @CreateDateColumn()
-  @Index()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  @Index('created_at_order_index')
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   @Column({ default: 'pending' })
   status: string;
 
   @Column({ nullable: true, unique: true })
-  confirmation_token: string | null;
+  confirmationToken: string | null;
 
-  @ManyToOne(() => UserEntity, (user) => user.orders, { nullable: true })
+  @ManyToOne(() => UserEntity, (user) => user.orders, { nullable: true, onDelete: 'CASCADE' })
   user: UserEntity;
 }

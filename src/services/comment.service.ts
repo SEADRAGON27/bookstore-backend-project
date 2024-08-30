@@ -14,7 +14,7 @@ export class CommentService {
     private bookRepository: Repository<BookEntity>,
   ) {}
 
-  async createComment(userId: number, id: number, createCommentDto: CommentDto): Promise<CommentEntity> {
+  async createComment(userId: string, id: string, createCommentDto: CommentDto): Promise<CommentEntity> {
     const comment = new CommentEntity();
     Object.assign(comment, createCommentDto);
 
@@ -24,19 +24,19 @@ export class CommentService {
     return await this.commentRepository.save(comment);
   }
 
-  async addCommentToFavorites(userId: number, id: number): Promise<CommentEntity> {
+  async addCommentToFavorites(userId: string, id: string): Promise<CommentEntity> {
     const comment = await this.commentRepository.findOneBy({ id });
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['favorite_comments'],
+      relations: ['favoriteComments'],
     });
 
-    const isNotFavorited = user.favorite_comments.findIndex((commentInFavorites) => commentInFavorites.id === comment.id) === -1;
+    const isNotFavorited = user.favoriteComments.findIndex((commentInFavorites) => commentInFavorites.id === comment.id) === -1;
 
     if (isNotFavorited) {
-      user.favorite_comments.push(comment);
-      comment.favorites_count++;
+      user.favoriteComments.push(comment);
+      comment.favoritesCount++;
 
       await this.userRepository.save(user);
       await this.commentRepository.save(comment);
@@ -45,19 +45,19 @@ export class CommentService {
     return comment;
   }
 
-  async deleteCommentToFavorites(userId: number, id: number): Promise<CommentEntity> {
+  async deleteCommentToFavorites(userId: string, id: string): Promise<CommentEntity> {
     const comment = await this.commentRepository.findOneBy({ id });
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['favorite_comments'],
+      relations: ['favoriteComments'],
     });
 
-    const commentIndex = user.favorite_comments.findIndex((commentInFavorites) => commentInFavorites.id === comment.id);
+    const commentIndex = user.favoriteComments.findIndex((commentInFavorites) => commentInFavorites.id === comment.id);
 
     if (commentIndex >= 0) {
-      user.favorite_comments.splice(commentIndex, 1);
-      comment.favorites_count--;
+      user.favoriteComments.splice(commentIndex, 1);
+      comment.favoritesCount--;
 
       await this.userRepository.save(user);
       await this.commentRepository.save(comment);
@@ -66,7 +66,7 @@ export class CommentService {
     return comment;
   }
 
-  async updateComment(userId: number, id: number, updateCommentDTO: CommentDto): Promise<CommentEntity> {
+  async updateComment(userId: string, id: string, updateCommentDTO: CommentDto): Promise<CommentEntity> {
     const comment = await this.commentRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -81,7 +81,7 @@ export class CommentService {
     return await this.commentRepository.save(comment);
   }
 
-  async deleteComment(userId: number, id: number) {
+  async deleteComment(userId: string, id: string) {
     const comment = await this.commentRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -94,7 +94,7 @@ export class CommentService {
     await this.commentRepository.delete({ id });
   }
 
-  async findAll(userId: number, query: QueryString.ParsedQs) {
+  async findAll(userId: string, query: QueryString.ParsedQs) {
     const queryBuilder = this.commentRepository.createQueryBuilder('comment').leftJoinAndSelect('comment.parentComment', 'parentComment');
 
     switch (query.rating) {
@@ -106,15 +106,15 @@ export class CommentService {
         break;
     }
 
-    let favoriteIds: number[] = [];
+    let favoriteIds: string[] = [];
 
     if (userId) {
       const currentUser = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ['favorite_comments'],
+        relations: ['favoriteComments'],
       });
 
-      favoriteIds = currentUser.favorite_comments.map((favorite) => favorite.id);
+      favoriteIds = currentUser.favoriteComments.map((favorite) => favorite.id);
     }
 
     if (query.cursor) queryBuilder.andWhere('comment.id > :cursor', { cursor: query.cursor });
@@ -150,7 +150,7 @@ export class CommentService {
     return commentListWithCursor;
   }
 
-  async addReplyToComment(userId: number, username: string, bookId: number, id: number, createCommentDto: CommentDto): Promise<CommentEntity> {
+  async addReplyToComment(userId: string, username: string, bookId: string, id: string, createCommentDto: CommentDto): Promise<CommentEntity> {
     const parentComment = await this.commentRepository.findOne({
       where: { id },
       relations: ['user'],
@@ -166,7 +166,7 @@ export class CommentService {
       from: process.env.FROM_EMAIL,
       to: parentComment.user.email,
       subject: `Answear on your comment from user:${username}`,
-      text: `Click here to watch answear ${process.env.CLIENT_URL}/books/${bookId}`,
+      text: `Click here to watch answear ${process.env.CLIENT_URL}books/${bookId}`,
     };
 
     comment = await this.commentRepository.save(comment);

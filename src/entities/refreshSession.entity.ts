@@ -6,14 +6,14 @@ export class RefreshSessionEntity {
   @PrimaryGeneratedColumn()
   id: string;
 
-  @Column()
-  @Index()
-  finger_print: string;
+  @Column({ name: 'finger_print' })
+  @Index('finger_print_index')
+  fingerprint: string;
 
-  @Column()
-  @Index()
-  refresh_token: string;
+  @Column({ name: 'refresh_token' })
+  @Index('refresh_token_index')
+  refreshToken: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.refresh_session, { onDelete: 'CASCADE' })
+  @ManyToOne(() => UserEntity, (user) => user.refreshSession, { onDelete: 'CASCADE' })
   user: UserEntity;
 }

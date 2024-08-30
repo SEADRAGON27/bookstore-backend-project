@@ -1,21 +1,21 @@
-import { BeforeInsert, Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { BeforeInsert, Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { hash } from 'bcrypt';
 import { RefreshSessionEntity } from './refreshSession.entity';
 import { CommentEntity } from './comment.entity';
 import { BookEntity } from './book.entity';
 import { ResetPasswordEntity } from './resetPassword.entity';
 import { OrderEntity } from './order.entity';
-import { PromoCodeEntity } from './promocode.entity';
+import { PromoCodeEntity } from './promoCode.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
-  @Column()
+  @Column({ unique: true })
   username: string;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
 
   @Column({ default: 'user' })
@@ -24,49 +24,62 @@ export class UserEntity {
   @Column({ select: false, nullable: true })
   password: string;
 
-  @Column({ nullable: true })
-  google_id: string;
+  @Column({ default: false, name: 'is_confirmed' })
+  isConfirmed: boolean;
 
-  @Column({ default: false })
-  is_confirmed: boolean;
-
-  @Column({ nullable: true, unique: true })
-  confirmation_token: string | null;
-
-  @BeforeInsert()
-  async hashPassword() {
-    this.password = await hash(this.password, 10);
-  }
+  @Column({ nullable: true, unique: true, name: 'confirmation_token' })
+  confirmationToken: string | null;
 
   @OneToMany(() => RefreshSessionEntity, (refreshSession) => refreshSession.user, { onDelete: 'CASCADE' })
-  refresh_session: RefreshSessionEntity[];
+  @JoinColumn({ name: 'refresh_session' })
+  refreshSession: RefreshSessionEntity[];
 
   @OneToMany(() => CommentEntity, (comment) => comment.user, { onDelete: 'CASCADE' })
   comments: CommentEntity[];
 
   @ManyToMany(() => CommentEntity)
-  @JoinTable()
-  favorite_comments: CommentEntity[];
+  @JoinTable({
+    name: 'favorited_comments',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'comment_id',
+      referencedColumnName: 'id',
+    },
+  })
+  favoriteComments: CommentEntity[];
 
   @ManyToMany(() => BookEntity)
-  @JoinTable()
-  favorite_books: BookEntity[];
+  @JoinTable({
+    name: 'favorited_books',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'book_id',
+      referencedColumnName: 'id',
+    },
+  })
+  favoriteBooks: BookEntity[];
 
-  @OneToMany(() => BookEntity, (book) => book.user, { onDelete: 'CASCADE' })
+  @OneToMany(() => BookEntity, (book) => book.user)
   books: BookEntity[];
 
   @OneToMany(() => ResetPasswordEntity, (token) => token.user)
   resetPasswordTokens: ResetPasswordEntity[];
 
-  @OneToMany(() => OrderEntity, (orders) => orders.user, { onDelete: 'CASCADE' })
+  @OneToMany(() => OrderEntity, (orders) => orders.user)
   orders: OrderEntity[];
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  update_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updateAt: Date;
 
-  @OneToMany(() => PromoCodeEntity, (promocode) => promocode.user, { onDelete: 'CASCADE' })
+  @OneToMany(() => PromoCodeEntity, (promocode) => promocode.user)
   promoCodes: PromoCodeEntity[];
 }

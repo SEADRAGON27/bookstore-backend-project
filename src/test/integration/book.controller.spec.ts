@@ -1,25 +1,17 @@
-import 'dotenv/config';
 import 'reflect-metadata';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { dataSource } from '../../configs/orm.config';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
 import bookRoute from '../../routes/book.route';
-import userRoute from '../../routes/user.route';
-import commentRoute from '../../routes/comment.route';
-import orderRoute from '../../routes/order.route';
-import promoCodeRoute from '../../routes/promoCode.route';
 import { errorHandler } from '../../middlewares/errorHandler.middleware';
-import fingerprint from 'express-fingerprint';
 import { DataSource } from 'typeorm';
-import { books, booksLength31a, booksOnTheMainPage, BooksOnTheMainPageEmptyArray, cacheRedisBookCategory, createUserAdminTest, createUserTest, exampleBook } from '../utils';
+import { bookAttributes, booksLength31a, BooksOnTheMainPageEmptyArray, createUserAdminTest, createUserTest, exampleBook } from '../utils';
 import { clientRedis } from '../../utils/clientRedis';
 import { sign } from 'jsonwebtoken';
 import path from 'path';
 import { s3 } from '../../configs/s3.config';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { bookRepository, userRepository } from '../../utils/initializeRepositories';
+import { authorRepository, bookRepository, categoryRepository, genreRepository, languageRepository, publisherRepository, userRepository } from '../../utils/initializeRepositories';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 describe('BookController', () => {
@@ -27,30 +19,18 @@ describe('BookController', () => {
   let dataSourceTest: DataSource;
   let container: StartedPostgreSqlContainer;
 
-  beforeEach(async () => {
-    await dataSourceTest.query('TRUNCATE TABLE books RESTART IDENTITY CASCADE;');
-    await dataSourceTest.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE;');
-    await clientRedis.flushdb();
-  });
-
   beforeAll(async () => {
     const app = express();
 
-    app.use(helmet());
-    app.use(cookieParser());
     app.use(express.json());
-    app.use(fingerprint());
 
     app.use('/books', bookRoute);
-    app.use('/users', userRoute);
-    app.use('/comments', commentRoute);
-    app.use('/orders', orderRoute);
-    app.use('/promo-codes', promoCodeRoute);
 
     app.use(errorHandler);
 
     server = app;
     container = await new PostgreSqlContainer().withExposedPorts(5432).start();
+
     dataSource.setOptions({
       host: container.getHost(),
       port: container.getMappedPort(5432),
@@ -61,8 +41,13 @@ describe('BookController', () => {
     });
 
     await dataSource.initialize();
+    await languageRepository.save({ name: bookAttributes.language });
+    await publisherRepository.save({ name: bookAttributes.publisher });
+    await categoryRepository.save({ name: bookAttributes.category });
+    await genreRepository.save({ name: bookAttributes.genre });
+    await authorRepository.save({ fullName: bookAttributes.authors });
     dataSourceTest = dataSource;
-  }, 200000);
+  }, 300000);
 
   afterAll(async () => {
     await dataSourceTest.destroy();
@@ -70,11 +55,17 @@ describe('BookController', () => {
     await container.stop();
   });
 
+  beforeEach(async () => {
+    await dataSourceTest.query('TRUNCATE TABLE books RESTART IDENTITY CASCADE;');
+    await dataSourceTest.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE;');
+    await clientRedis.flushdb();
+  });
+
   describe('GET / - Get books on the main page', () => {
     it('should return books for the main page when user is authenticated', async () => {
-      await bookRepository.save(books);
-
-      await userRepository.save(createUserTest);
+      const user = await userRepository.save(createUserTest);
+      exampleBook.user = user;
+      await bookRepository.save(exampleBook);
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
@@ -87,30 +78,36 @@ describe('BookController', () => {
     });
 
     it('should return the books one of them was liked by the user', async () => {
-      await bookRepository.save(books);
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
 
       await userRepository.save(createUserTest);
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      await request(server).post('/books/1/favorite').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
+      await request(server).post(`/books/${id}/favorite`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
       const response = await request(server).get('/books/').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
 
-      expect(response.body.newBooks[1].favorited).toBe(true);
+      expect(response.body.newBooks[0].favorited).toBe(true);
       expect(response.body.bestsellerBooks[0].favorited).toBe(true);
       expect(await clientRedis.get('/books/')).toBe(null);
     });
 
     it('should return books for the main page when user is not authenticated', async () => {
-      delete books[0].user;
-      await bookRepository.save(books);
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
 
       const response = await request(server).get('/books/').expect('Content-Type', /json/).expect(200);
+
+      const books = await clientRedis.get('/books/');
+      const booksOnTheMainPage = JSON.parse(books);
 
       expect(response.body.salesBooks.length).toBeLessThan(10);
       expect(response.body.newBooks.length).toBeLessThan(10);
       expect(response.body.bestsellerBooks.length).toBeLessThan(10);
-      expect(await clientRedis.get('/books/')).toBe(JSON.stringify(booksOnTheMainPage));
+      expect(booksOnTheMainPage.newBooks[0].book.id).toBe(id);
     });
 
     it("should return empty array, if bookstore hasn't", async () => {
@@ -122,48 +119,49 @@ describe('BookController', () => {
       expect(await clientRedis.get('/books/')).toBe(JSON.stringify(BooksOnTheMainPageEmptyArray));
     });
   });
-
   describe('GET / - Get books by category', () => {
     it('should return book by category user is authenticated', async () => {
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      await bookRepository.save(exampleBook);
+
       await userRepository.save(createUserTest);
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      books[0].category = 'journalist';
-      await bookRepository.save(books);
+      const response = await request(server).get('/books/category/Fiction').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
+      const allFiction = response.body.books.every((item) => (item.book.category = 'Fiction'));
 
-      const response = await request(server).get('/books/category/journalist').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
-      const allJournalist = response.body.books.every((item) => (item.book.category = 'journalist'));
-
-      expect(allJournalist).toBe(true);
-      expect(await clientRedis.get('/books/category/journalist')).toBe(null);
+      expect(allFiction).toBe(true);
+      expect(await clientRedis.get('/books/category/Fiction')).toBe(null);
     });
 
     it('should return book by category user is not authenticated', async () => {
-      delete books[0].user;
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
 
-      books[0].category = 'journalist';
-      await bookRepository.save(books);
+      await request(server).get('/books/category/Fiction').expect('Content-Type', /json/).expect(200);
 
-      await request(server).get('/books/category/journalist').expect('Content-Type', /json/).expect(200);
+      const books = await clientRedis.get('/books/category/Fiction');
+      const cacheRedisBookCategory = JSON.parse(books);
 
-      expect(await clientRedis.get('/books/category/journalist')).toBe(JSON.stringify(cacheRedisBookCategory));
+      expect(cacheRedisBookCategory[0].book.id).toBe(id);
     });
 
     it("should return empty array, if bookstore hasn't", async () => {
-      const response = await request(server).get('/books/category/journalist').expect('Content-Type', /json/).expect(200);
+      const response = await request(server).get('/books/category/Fiction').expect('Content-Type', /json/).expect(200);
 
       expect(response.body.books.length).toBe(0);
 
-      expect(await clientRedis.get('/books/category/journalist')).toBe(null);
+      expect(await clientRedis.get('/books/category/Fiction')).toBe(null);
     });
 
     it('should return books with nexCursor 30', async () => {
       await bookRepository.save(booksLength31a);
+      const response = await request(server).get('/books/category/Fiction').expect('Content-Type', /json/).expect(200);
 
-      const response = await request(server).get('/books/category/fiction').expect('Content-Type', /json/).expect(200);
-
-      expect(response.body.nextCursor).toBe(30);
+      expect(response.body.books.length).toBe(30);
     });
   });
 
@@ -171,9 +169,9 @@ describe('BookController', () => {
     it("should return books's title according to your request", async () => {
       await bookRepository.save(booksLength31a);
 
-      const response = await request(server).get('/books/search?text=example-book-title-1').expect('Content-Type', /json/).expect(200);
+      const response = await request(server).get('/books/search?text=example-book-title-11').expect('Content-Type', /json/).expect(200);
 
-      expect(response.body.books[0].book.title).toBe('example-book-title-1');
+      expect(response.body.books[0].book.title).toBe('example-book-title-11');
     });
 
     it('looking for books using the keyword book. Should return all books', async () => {
@@ -187,11 +185,11 @@ describe('BookController', () => {
 
   describe('GET / - get a book by title', () => {
     it('should return book', async () => {
-      await bookRepository.save(books);
+      await bookRepository.save(booksLength31a);
 
-      const response = await request(server).get('/books/example-1').expect('Content-Type', /json/).expect(200);
+      const response = await request(server).get('/books/example-book-title-11').expect('Content-Type', /json/).expect(200);
 
-      expect(response.body.title).toBe('example-1');
+      expect(response.body.title).toBe('example-book-title-11');
     });
 
     it("book doesn't exist, should return error", async () => {
@@ -203,28 +201,32 @@ describe('BookController', () => {
 
   describe('POST / - add book to favorites and delete book from favorites', () => {
     it('should return the book with a like ', async () => {
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
+
       await userRepository.save(createUserTest);
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      await bookRepository.save(books);
+      const response = await request(server).post(`/books/${id}/favorite`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
 
-      const response = await request(server).post('/books/1/favorite').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
-
-      expect(response.body.favorites_count).toBe(1);
+      expect(response.body.favoritesCount).toBe(1);
     });
 
     it('should return the book without a like', async () => {
+      const user = await userRepository.save(createUserAdminTest);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
+
       await userRepository.save(createUserTest);
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      await bookRepository.save(books);
+      await request(server).post(`/books/${id}/favorite`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
+      const response = await request(server).post(`/books/${id}/unfavorite`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
 
-      await request(server).post('/books/1/favorite').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
-      const response = await request(server).post('/books/1/unfavorite').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
-
-      expect(response.body.favorites_count).toBe(0);
+      expect(response.body.favoritesCount).toBe(0);
     });
   });
 
@@ -236,7 +238,7 @@ describe('BookController', () => {
 
       const response = await request(server).post('/books/create').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(201);
 
-      expect(response.body.id).toBe(1);
+      expect(response.body.title).toBe('example-book-title');
     });
 
     it('should return error message, when book title already exists', async () => {
@@ -257,11 +259,11 @@ describe('BookController', () => {
 
       const jwt = sign(createUserAdminTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      books[0].user = user;
-      await bookRepository.save(books[0]);
+      exampleBook.user = user;
+      const { id } = await bookRepository.save(exampleBook);
 
       exampleBook.summary = 'change summary';
-      const response = await request(server).put('/books/1').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(200);
+      const response = await request(server).put(`/books/${id}`).set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(200);
 
       expect(response.body.summary).toBe('change summary');
     });
@@ -272,8 +274,8 @@ describe('BookController', () => {
       const jwt = sign(createUserAdminTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
       exampleBook.summary = 'change summary';
 
-      const response = await request(server).put('/books/1').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(404);
-
+      const response = await request(server).put('/books/f95e70af-611b-46cb-9ce0-3115ed59940d').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(404);
+      console.log(response.body);
       expect(response.body.message).toBe("Book doesn't exist.");
     });
   });
@@ -286,9 +288,9 @@ describe('BookController', () => {
       const filePath = path.join(__dirname, 'images', 'book-test-image.jpg');
 
       const responseLink = await request(server).post('/books/upload-image').set('Authorization', `Token ${jwt}`).attach('image', filePath).expect('Content-Type', /json/).expect(200);
-      exampleBook.cover_image_link = responseLink.body;
-      await request(server).post('/books/create').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(201);
-      const response = await request(server).delete('/books/1').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
+      exampleBook.coverImageLink = responseLink.body;
+      const responseBook = await request(server).post('/books/create').set('Authorization', `Token ${jwt}`).send(exampleBook).expect('Content-Type', /json/).expect(201);
+      const response = await request(server).delete(`/books/${responseBook.body.id}`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
 
       expect(response.body.message).toBe('Book has been deleted.');
     });
@@ -298,7 +300,7 @@ describe('BookController', () => {
 
       const jwt = sign(createUserAdminTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      const response = await request(server).delete('/books/1').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(404);
+      const response = await request(server).delete('/books/f95e70af-611b-46cb-9ce0-3115ed59940d').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(404);
 
       expect(response.body.message).toBe("Book doesn't exist.");
     });
@@ -310,15 +312,14 @@ describe('BookController', () => {
 
       const jwt = sign(createUserTest, process.env.SECRET_PHRASE_ACCESS_TOKEN, { expiresIn: '30m' });
 
-      books[0].user = user;
-      books[1].user = user;
+      exampleBook.user = user;
 
-      await bookRepository.save(books);
+      const { id } = await bookRepository.save(exampleBook);
 
-      await request(server).post('/books/2/favorite').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
+      await request(server).post(`/books/${id}/favorite`).set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
       const response = await request(server).get('/books/liked/all').set('Authorization', `Token ${jwt}`).expect('Content-Type', /json/).expect(200);
 
-      expect(response.body[0].favorites_count).toBe(1);
+      expect(response.body[0].favoritesCount).toBe(1);
     });
 
     it('should return empty array', async () => {

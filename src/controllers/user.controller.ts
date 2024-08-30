@@ -28,19 +28,19 @@ export class UserController {
   async loginUser(req: Request, res: Response, next: NextFunction) {
     try {
       const fingerprint = req.fingerprint.hash;
-      const loginUserDTO = req.body;
+      const loginUserDto = req.body;
 
-      const { user, refresh_token } = await this.userService.loginUser(loginUserDTO, fingerprint);
+      const { user, refreshToken } = await this.userService.loginUser(loginUserDto, fingerprint);
 
       const userResponse = this.userService.buildUserResponse(user);
 
-      res.cookie('refreshToken', refresh_token, {
+      res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
       });
 
       res.status(200).json(userResponse);
-      logger.info({ loginUserDTO, fingerprint }, 'Logging in user successfully');
+      logger.info({ loginUserDto, fingerprint }, 'Logging in user successfully');
     
     } catch (error) {
       
@@ -58,6 +58,7 @@ export class UserController {
 
       res.status(200).json(user);
       logger.info({ id }, 'Fetching user details successfully');
+    
     } catch (error) {
       
       logger.error(error, 'Error fetching user details');
@@ -68,18 +69,29 @@ export class UserController {
 
   async updateUser(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-      const updateUserDTO = req.body;
-      const userId = req.user.id;
+      const updateUserDto = req.body;
+      const id = req.user.id;
 
-      const user = await this.userService.updateUser(userId, updateUserDTO);
+      const data = await this.userService.updateUser(id, updateUserDto);
 
+      if (!data) {
+        return res.sendStatus(200);
+      }
+
+      const { user, refreshToken } = data;
       const userResponse = this.userService.buildUserResponse(user);
 
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        maxAge: +process.env.REFRESH_TOKEN_EXPIRATION_15DAYS,
+      });
+
       res.status(200).json(userResponse);
-      logger.info({ updateUserDTO, userId }, 'Updating user details succesfully');
+
+      logger.info({ updateUserDto, id }, 'Updating user details succesfully');
     
     } catch (error) {
-      
+
       logger.error(error, 'Error updating user');
       next(error);
     
@@ -88,11 +100,12 @@ export class UserController {
 
   async deleteUser(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user.id;
+      const id = req.user.id;
 
-      await this.userService.deleteUser(userId);
+      await this.userService.deleteUser(id);
+      
       res.status(200).send({ message: 'User has been deleted successfully' });
-      logger.info({ userId }, 'Deleting user successfully');
+      logger.info({ id }, 'Deleting user successfully');
     
     } catch (error) {
       
@@ -105,12 +118,12 @@ export class UserController {
   async logoutUser(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const refreshToken = req.cookies.refreshToken;
-      const userId = req.user.id;
+      const id = req.user.id;
 
       await this.userService.deleteRefreshSession(refreshToken);
 
       res.status(200).clearCookie('refreshToken');
-      logger.info({ userId }, 'Logging out user successfully');
+      logger.info({ id }, 'Logging out user successfully');
     
     } catch (error) {
       
@@ -125,11 +138,11 @@ export class UserController {
       const fingerprint = req.fingerprint.hash;
       const currentRefreshToken = req.cookies.refreshToken;
 
-      const { accessToken, refresh_token, tokenExpiration } = await this.userService.refresh(currentRefreshToken, fingerprint);
+      const { accessToken, refreshToken, tokenExpiration } = await this.userService.refresh(currentRefreshToken, fingerprint);
 
-      res.cookie('refreshToken', refresh_token, {
+      res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
+        maxAge: +process.env.REFRESH_TOKEN_EXPIRATION_15DAYS,
       });
 
       res.status(200).json({ accessToken, tokenExpiration });
@@ -145,14 +158,14 @@ export class UserController {
 
   async confirmEmailForRegistration(req: Request, res: Response, next: NextFunction) {
     try {
-      const token = req.params.token;
+      const token = req.query.token as string;
       const fingerprint = req.fingerprint.hash;
 
-      const { user, refresh_token } = await this.userService.confirmEmail(token, fingerprint);
+      const { user, refreshToken } = await this.userService.confirmEmail(token, fingerprint);
 
       const userResponse = this.userService.buildUserResponse(user);
 
-      res.cookie('refreshToken', refresh_token, {
+      res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
       });
@@ -188,7 +201,7 @@ export class UserController {
   async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const resetPasswordDto = req.body;
-      const token = req.params.token;
+      const token = req.query.token as string;
 
       await this.userService.resetPassword(token, resetPasswordDto);
 
@@ -203,39 +216,39 @@ export class UserController {
     }
   }
 
-  async startGoogleAuthification(accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) {
-    try {
-      const user = await this.userService.findOrCreate(profile);
+  async googleAuthRedirect(req: Request, res: Response) {
+    const token = req.user['accessToken'];
 
-      done(null, user);
-      logger.info({ profile }, 'Google authentication started successfully');
-    
-    } catch (error) {
-      
-      logger.error(error, 'Error starting Google authentication');
-      done(error as Error);
-    
-    }
+    return res.redirect(`http://localhost:3000/users/confirm-google-email?token=${token}`);
   }
 
-  async finishGoogleAuthificaton(req: ExpressRequest, res: Response, next: NextFunction) {
+  async confirmGoogleEmail(req: Request, res: Response) {
+    const token = req.query.token;
+    res.status(200).json({ token });
+  }
+
+  async successGoogleAuth(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user.id;
-      const fingerPrint = req.fingerprint.hash;
-      const { user, refresh_token } = await this.userService.finishGoogleAuthification(userId, fingerPrint);
+      const createUserGoogleDto = req.body;
+      const responce = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${createUserGoogleDto.token}`);
+
+      const { email } = await responce.json();
+      const fingerprint = req.fingerprint.hash;
+
+      const { user, refreshToken } = await this.userService.finishGoogleAuth(createUserGoogleDto, email, fingerprint);
       const userResponse = this.userService.buildUserResponse(user);
 
-      res.cookie('refreshToken', refresh_token, {
+      res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
       });
 
       res.status(200).json(userResponse);
-      logger.info({ userId, fingerPrint }, 'Finishing Google authentication');
+      logger.info(user.email, 'Google authentication has been completed');
     
     } catch (error) {
       
-      logger.error(error, 'Error finishing Google authentication');
+      logger.error(error, 'Error Google authentication');
       next(error);
     
     }

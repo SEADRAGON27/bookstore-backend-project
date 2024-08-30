@@ -2,7 +2,7 @@ import { BookEntity } from '../entities/book.entity';
 
 export interface BookResponse {
   books: FavoritedBook[];
-  nextCursor: number;
+  nextCursor: string;
 }
 
 export interface FavoritedBook {

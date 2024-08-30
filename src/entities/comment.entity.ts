@@ -1,26 +1,27 @@
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { BookEntity } from './book.entity';
 
 @Entity({ name: 'comments' })
 export class CommentEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   text: string;
 
-  @Column({ default: 0 })
-  favorites_count: number;
+  @Column({ default: 0, name: 'favorites_count' })
+  favoritesCount: number;
 
-  @CreateDateColumn()
-  @Index()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  @Index('created_at_index')
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  update_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updateAt: Date;
 
   @ManyToOne(() => CommentEntity, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'parent_comment' })
   parentComment: CommentEntity;
 
   @ManyToOne(() => UserEntity, (user) => user.comments)

@@ -3,14 +3,14 @@ import * as cron from 'node-cron';
 import { logger } from '../logs/logger';
 import { orderRepository, userRepository } from './initializeRepositories';
 
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('0 0 * * *', async () => {
   const expirationDate = new Date();
   expirationDate.setMinutes(expirationDate.getMinutes() - 15);
 
   const usersToDelete = await userRepository.find({
     where: {
-      is_confirmed: false,
-      created_at: LessThan(expirationDate),
+      isConfirmed: false,
+      createdAt: LessThan(expirationDate),
     },
   });
 
@@ -27,7 +27,7 @@ cron.schedule('0 0 * * *', async () => {
   const ordersToDelete = await orderRepository.find({
     where: {
       status: 'pending',
-      created_at: LessThan(expirationDate),
+      createdAt: LessThan(expirationDate),
     },
   });
 

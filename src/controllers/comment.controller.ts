@@ -10,7 +10,7 @@ export class CommentController {
     try {
       const userId = req.user.id;
       const createCommentDto = req.body;
-      const bookId = req.params.bookId as unknown as number;
+      const bookId = req.params.bookId;
 
       const comment = await this.commentService.createComment(userId, bookId, createCommentDto);
 
@@ -28,7 +28,7 @@ export class CommentController {
   async addCommentToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       const comment = await this.commentService.addCommentToFavorites(userId, id);
 
@@ -46,7 +46,7 @@ export class CommentController {
   async deleteCommentToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       const comment = await this.commentService.deleteCommentToFavorites(userId, id);
 
@@ -64,7 +64,7 @@ export class CommentController {
   async updateComment(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
       const updateCommentDTO = req.body;
 
       const comment = await this.commentService.updateComment(userId, id, updateCommentDTO);
@@ -83,11 +83,11 @@ export class CommentController {
   async deleteComment(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       await this.commentService.deleteComment(userId, id);
 
-      res.status(200);
+      res.sendStatus(200);
       logger.info({ userId, id }, 'Deleting comment successfully');
     
     } catch (error) {
@@ -120,8 +120,8 @@ export class CommentController {
     try {
       const username = req.user.username;
       const userId = req.user.id;
-      const id = req.params.identificator as unknown as number;
-      const bookId = req.params.bookId as unknown as number;
+      const id = req.params.identificator;
+      const bookId = req.params.bookId;
       const replyToCommentDto = req.body;
 
       const comment = await this.commentService.addReplyToComment(userId, username, bookId, id, replyToCommentDto);

@@ -7,5 +7,5 @@ export interface UserResponse {
 
 export interface CreateUserResponse {
   user: UserEntity;
-  refresh_token: string;
+  refreshToken: string;
 }

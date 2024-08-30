@@ -1,20 +1,20 @@
-import { IsDataURI, IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class PromoCode {
   @IsNotEmpty()
   code: string;
 
   @IsNumber()
-  discount_percent: number;
+  discountPercent: number;
 
   @IsOptional()
   @IsNumber()
-  max_discount: number;
+  maxDiscount: number;
 
   @IsOptional()
   @IsNumber()
-  min_order_amount: number;
+  minOrderAmount: number;
 
   @IsOptional()
-  expiration_date: Date;
+  expirationDate: Date;
 }

@@ -82,7 +82,7 @@ export class BookController {
   async addBookToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       const comment = await this.bookService.addBookToFavorites(userId, id);
 
@@ -100,7 +100,7 @@ export class BookController {
   async deleteBookToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       const comment = await this.bookService.deleteBookFromFavorites(userId, id);
 
@@ -136,7 +136,7 @@ export class BookController {
   async updateBook(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
       const updateBookDTO = req.body;
 
       const book = await this.bookService.updateBook(userId, id, updateBookDTO);
@@ -154,7 +154,7 @@ export class BookController {
 
   async deleteBook(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-      const id = req.params.id as unknown as number;
+      const id = req.params.id;
 
       await this.bookService.deleteBook(id);
 
