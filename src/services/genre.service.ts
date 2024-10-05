@@ -1,30 +1,27 @@
 import { Repository } from 'typeorm';
 import { CustomError } from '../interfaces/customError';
 import { GenreEntity } from '../entities/genre.entity';
-import { BookAttributesDto } from '../dto/bookAttributes.dto';
+import { GenreDto } from '../dto/bookAttributes.dto';
 
 export class GenreService {
-  constructor(private genreRepository: Repository<GenreEntity>) {}
+  constructor(private readonly genreRepository: Repository<GenreEntity>) {}
 
-  async createGenre(id: number, createGenreDto: BookAttributesDto) {
-    let genre = new GenreEntity();
-    Object.assign(genre, createGenreDto);
+  async createGenre(createGenreDto: GenreDto) {
+    const genre = await this.genreRepository.findOneBy({ name: createGenreDto.name });
 
-    genre = await this.genreRepository.save(genre);
+    if (genre) throw new CustomError(404, 'Genre name is taken.');
 
-    return genre;
+    return await this.genreRepository.save(genre);
   }
 
-  async updateGenre(id: number, updateGenreDto: BookAttributesDto) {
-    let genre = await this.genreRepository.findOneBy({ id });
+  async updateGenre(id: number, updateGenreDto: GenreDto) {
+    const genre = await this.genreRepository.findOneBy({ id });
 
     if (!genre) throw new CustomError(404, "Genre doesn't exist.");
 
     Object.assign(genre, updateGenreDto);
 
-    genre = await this.genreRepository.save(genre);
-
-    return genre;
+    return await this.genreRepository.save(genre);
   }
 
   async deleteGenre(id: number) {
@@ -46,6 +43,10 @@ export class GenreService {
   }
 
   async getGenre(id: number) {
+    const genre = await this.genreRepository.findOneBy({ id });
+
+    if (!genre) throw new CustomError(404, "Genre doesn't exist.");
+
     return await this.genreRepository.findOneBy({ id });
   }
 }

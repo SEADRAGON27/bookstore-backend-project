@@ -1,5 +1,4 @@
-import { BeforeInsert, Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-import { hash } from 'bcrypt';
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 import { RefreshSessionEntity } from './refreshSession.entity';
 import { CommentEntity } from './comment.entity';
 import { BookEntity } from './book.entity';

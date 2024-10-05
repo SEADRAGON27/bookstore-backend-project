@@ -21,10 +21,10 @@ export class BookEntity {
   @Column()
   summary: string;
 
-  @Column({ type: 'double precision', name: 'original_price' })
+  @Column({ type: 'decimal', precision: 7, scale: 2, name: 'original_price' })
   originalPrice: number;
 
-  @Column({ type: 'double precision', default: 0, name: 'discounted_price' })
+  @Column({ type: 'decimal', precision: 7, scale: 2, default: 0, name: 'discounted_price' })
   discountedPrice: number;
 
   @Column({ name: 'cover_image_link' })

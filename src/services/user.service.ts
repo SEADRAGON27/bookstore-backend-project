@@ -10,17 +10,18 @@ import { CreateUserDto, CreateUserGoogleDto } from '../dto/createUser.dto';
 import { LoginUserDto } from '../dto/loginUser.dto';
 import { UpdateUserDto } from '../dto/updateUser.dto';
 import { AuthTokens } from '../types/authTokens.type';
-import { transporter } from '../configs/nodemailer.config';
 import { v4 as uuidv4 } from 'uuid';
 import { ResetPasswordEntity } from '../entities/resetPassword.entity';
 import { hash } from 'bcrypt';
 import { PasswordResetDTO } from '../dto/passwordReset.dto';
+import { NotificationService } from './notification.service';
 
 export class UserService {
   constructor(
-    private userRepository: Repository<UserEntity>,
-    private refreshSessionRepository: Repository<RefreshSessionEntity>,
-    private resetPasswordRepository: Repository<ResetPasswordEntity>,
+    private readonly userRepository: Repository<UserEntity>,
+    private readonly refreshSessionRepository: Repository<RefreshSessionEntity>,
+    private readonly resetPasswordRepository: Repository<ResetPasswordEntity>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto, fingerprint: string): Promise<void> {
@@ -53,7 +54,7 @@ export class UserService {
       user,
     });
 
-    //await this.sendVerificationEmail(user.email, user.confirmationToken);
+    await this.notificationService.sendVerificationEmail(user.email, user.confirmationToken);
   }
 
   async loginUser(loginUserDto: LoginUserDto, fingerprint: string): Promise<CreateUserResponse> {
@@ -119,17 +120,6 @@ export class UserService {
     );
   }
 
-  async sendVerificationEmail(userEmail: string, token: string) {
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
-      to: userEmail,
-      subject: 'Confirm Email Address',
-      text: `Please click on the link to confirm email ${process.env.CLIENT_URL}confirm-email?token=${token}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-  }
-
   async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<CreateUserResponse> {
     const user = await this.userRepository.findOneBy({ id });
     const token = uuidv4();
@@ -137,7 +127,7 @@ export class UserService {
     if (updateUserDto.email) {
       user.confirmationToken = token;
       await this.userRepository.save(user);
-      await this.sendVerificationEmail(updateUserDto.email, token);
+      await this.notificationService.sendVerificationEmail(updateUserDto.email, token);
 
       return null;
     }
@@ -252,19 +242,7 @@ export class UserService {
 
     await this.resetPasswordRepository.save(resetPasswordToken);
 
-    await this.sendResetPasswordEmail(user.email, token);
-  }
-
-  async sendResetPasswordEmail(email: string, token: string) {
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
-      to: email,
-      subject: 'Confirm Email Address',
-      text: `To reset your password, please click the following link: 
-             ${process.env.CLIENT_URL}reset-password?token=${token}`,
-    };
-
-    await transporter.sendMail(mailOptions);
+    await this.notificationService.sendResetPasswordEmail(user.email, token);
   }
 
   async resetPassword(token: string, passwordResetDto: PasswordResetDTO) {

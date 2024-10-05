@@ -5,27 +5,26 @@ import { AuthorDto } from '../dto/author.dto';
 import QueryString from 'qs';
 
 export class AuthorService {
-  constructor(private authorRepository: Repository<AuthorEntity>) {}
+  constructor(private readonly authorRepository: Repository<AuthorEntity>) {}
 
-  async createAuthor(id: number, createAuthorDto: AuthorDto) {
-    let author = new AuthorEntity();
+  async createAuthor(createAuthorDto: AuthorDto) {
+    const author = await this.authorRepository.findOneBy({ fullName: createAuthorDto.fullName });
+
+    if (author) throw new CustomError(404, 'Author name is taken.');
+
     Object.assign(author, createAuthorDto);
 
-    author = await this.authorRepository.save(author);
-
-    return author;
+    return await this.authorRepository.save(author);
   }
 
   async updateAuthor(id: number, updateAuthorDto: AuthorDto) {
-    let author = await this.authorRepository.findOneBy({ id });
+    const author = await this.authorRepository.findOneBy({ id });
 
     if (!author) throw new CustomError(404, "Author doesn't exist.");
 
     Object.assign(author, updateAuthorDto);
 
-    author = await this.authorRepository.save(author);
-
-    return author;
+    return await this.authorRepository.save(author);
   }
 
   async deleteAuthor(id: number) {
@@ -74,6 +73,10 @@ export class AuthorService {
   }
 
   async getAuthor(id: number) {
-    return await this.authorRepository.findOneBy({ id });
+    const author = await this.authorRepository.findOneBy({ id });
+
+    if (!author) throw new CustomError(404, "Author doesn't exist.");
+
+    return author;
   }
 }

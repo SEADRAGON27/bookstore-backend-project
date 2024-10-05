@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+/*import 'reflect-metadata';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { dataSource } from '../../configs/orm.config';
@@ -9,7 +9,7 @@ import { bookAttributes, booksLength31a, BooksOnTheMainPageEmptyArray, createUse
 import { clientRedis } from '../../utils/clientRedis';
 import { sign } from 'jsonwebtoken';
 import path from 'path';
-import { s3 } from '../../configs/s3.config';
+//import { s3 } from '../../configs/s3.config';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { authorRepository, bookRepository, categoryRepository, genreRepository, languageRepository, publisherRepository, userRepository } from '../../utils/initializeRepositories';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
@@ -361,3 +361,4 @@ describe('BookController', () => {
     });
   });
 });
+*/

@@ -4,28 +4,36 @@ import { UserEntity } from '../entities/user.entity';
 import { CommentDto } from '../dto/comment.dto';
 import { CustomError } from '../interfaces/customError';
 import QueryString from 'qs';
-import { transporter } from '../configs/nodemailer.config';
 import { BookEntity } from '../entities/book.entity';
+import { NotificationService } from './notification.service';
 
 export class CommentService {
   constructor(
-    private userRepository: Repository<UserEntity>,
-    private commentRepository: Repository<CommentEntity>,
-    private bookRepository: Repository<BookEntity>,
+    private readonly userRepository: Repository<UserEntity>,
+    private readonly commentRepository: Repository<CommentEntity>,
+    private readonly bookRepository: Repository<BookEntity>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createComment(userId: string, id: string, createCommentDto: CommentDto): Promise<CommentEntity> {
+    const book = await this.bookRepository.findOneBy({ id });
+
+    if (!book) throw new CustomError(404, 'Book doesn`t exist.');
+
     const comment = new CommentEntity();
     Object.assign(comment, createCommentDto);
 
     comment.user = await this.userRepository.findOneBy({ id: userId });
-    comment.book = await this.bookRepository.findOneBy({ id });
+
+    comment.book = book;
 
     return await this.commentRepository.save(comment);
   }
 
   async addCommentToFavorites(userId: string, id: string): Promise<CommentEntity> {
     const comment = await this.commentRepository.findOneBy({ id });
+
+    if (!comment) throw new CustomError(404, 'Coomment doesn`t exist.');
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -38,8 +46,10 @@ export class CommentService {
       user.favoriteComments.push(comment);
       comment.favoritesCount++;
 
-      await this.userRepository.save(user);
-      await this.commentRepository.save(comment);
+      await this.userRepository.manager.transaction(async (manager) => {
+        await manager.save(user);
+        await manager.save(comment);
+      });
     }
 
     return comment;
@@ -47,6 +57,8 @@ export class CommentService {
 
   async deleteCommentToFavorites(userId: string, id: string): Promise<CommentEntity> {
     const comment = await this.commentRepository.findOneBy({ id });
+
+    if (!comment) throw new CustomError(404, 'Coomment doesn`t exist.');
 
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -59,8 +71,10 @@ export class CommentService {
       user.favoriteComments.splice(commentIndex, 1);
       comment.favoritesCount--;
 
-      await this.userRepository.save(user);
-      await this.commentRepository.save(comment);
+      await this.userRepository.manager.transaction(async (manager) => {
+        await manager.save(user);
+        await manager.save(comment);
+      });
     }
 
     return comment;
@@ -89,7 +103,7 @@ export class CommentService {
 
     if (!comment) throw new CustomError(404, "Comment doesn't exist.");
 
-    if (comment.user.id !== userId && comment.user.role === 'user') throw new CustomError(403, "You aren't author this comment.");
+    if (comment.user.id !== userId && comment.user.role !== 'admin') throw new CustomError(403, "You aren't author this comment.");
 
     await this.commentRepository.delete({ id });
   }
@@ -170,7 +184,7 @@ export class CommentService {
     };
 
     comment = await this.commentRepository.save(comment);
-    await transporter.sendMail(mailOptions);
+    await this.notificationService.send(mailOptions);
 
     return comment;
   }

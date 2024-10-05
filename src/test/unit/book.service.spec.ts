@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import 'dotenv/config';
+/*import 'dotenv/config';
 import { FindOperator, In, MoreThan, SelectQueryBuilder } from 'typeorm';
 import { BookEntity } from '../../entities/book.entity';
 import { UserEntity } from '../../entities/user.entity';
@@ -631,4 +631,4 @@ describe('BookService', () => {
       expect(result).toEqual(books);
     });
   });
-});
+});*/

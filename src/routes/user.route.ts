@@ -16,10 +16,12 @@ import { PasswordResetDTO } from '../dto/passwordReset.dto';
 import { refreshSessionRepository, resetPasswordRepository, userRepository } from '../utils/initializeRepositories';
 import { oauthConfig } from '../configs/OAuth2.config';
 import { VerifyCallback } from 'passport-google-oauth20';
+import { notificationService } from '../services/notification.service';
+import { winstonLoggerService } from '../logs/logger';
 const router = Router();
 
-const userService = new UserService(userRepository, refreshSessionRepository, resetPasswordRepository);
-const userController = new UserController(userService);
+const userService = new UserService(userRepository, refreshSessionRepository, resetPasswordRepository,notificationService);
+const userController = new UserController(userService,winstonLoggerService);
 
 passport.initialize();
 passport.use(new GoogleStrategy(oauthConfig, async (

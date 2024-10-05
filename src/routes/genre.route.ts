@@ -6,11 +6,12 @@ import { GenreService } from '../services/genre.service';
 import { GenreController } from '../controllers/genre.controller';
 import { BookAttributesDto } from '../dto/bookAttributes.dto';
 import { validation } from '../middlewares/validation.middleware';
+import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 
 const genreService = new GenreService(genreRepository);
-const genreController = new GenreController(genreService);
+const genreController = new GenreController(genreService, winstonLoggerService);
 
 router.post('/create', authMiddleware, chechRoleGuard, validation(BookAttributesDto), genreController.createGenre.bind(genreController));
 router.delete('/:id', authMiddleware, chechRoleGuard, genreController.deleteGenre.bind(genreController));

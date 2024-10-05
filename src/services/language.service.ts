@@ -1,30 +1,29 @@
 import { Repository } from 'typeorm';
 import { CustomError } from '../interfaces/customError';
 import { LanguageEntity } from '../entities/language.entity';
-import { BookAttributesDto } from '../dto/bookAttributes.dto';
+import { LanguageDto } from '../dto/bookAttributes.dto';
 
 export class LanguageService {
-  constructor(private languageRepository: Repository<LanguageEntity>) {}
+  constructor(private readonly languageRepository: Repository<LanguageEntity>) {}
 
-  async createLanguage(id: number, createLanguageDto: BookAttributesDto) {
-    let language = new LanguageEntity();
+  async createLanguage(createLanguageDto: LanguageDto) {
+    const language = await this.languageRepository.findOneBy({ name: createLanguageDto.name });
+
+    if (language) throw new CustomError(404, 'Language name is taken.');
+
     Object.assign(language, createLanguageDto);
 
-    language = await this.languageRepository.save(language);
-
-    return language;
+    return await this.languageRepository.save(language);
   }
 
-  async updateLanguage(id: number, updateLanguageDto: BookAttributesDto) {
-    let language = await this.languageRepository.findOneBy({ id });
+  async updateLanguage(id: number, updateLanguageDto: LanguageDto) {
+    const language = await this.languageRepository.findOneBy({ id });
 
     if (!language) throw new CustomError(404, "Language doesn't exist.");
 
     Object.assign(language, updateLanguageDto);
 
-    language = await this.languageRepository.save(language);
-
-    return language;
+    return await this.languageRepository.save(language);
   }
 
   async deleteLanguage(id: number) {
@@ -46,6 +45,10 @@ export class LanguageService {
   }
 
   async getLanguage(id: number) {
+    const language = await this.languageRepository.findOneBy({ id });
+
+    if (!language) throw new CustomError(404, "Language doesn't exist.");
+
     return await this.languageRepository.findOneBy({ id });
   }
 }

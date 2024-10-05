@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
-export class PromoCode {
+export class CreatePromoCodeDto {
   @IsNotEmpty()
   code: string;
 

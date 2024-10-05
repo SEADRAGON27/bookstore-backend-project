@@ -1,30 +1,29 @@
 import { Repository } from 'typeorm';
 import { CustomError } from '../interfaces/customError';
 import { CategoryEntity } from '../entities/category.entity';
-import { BookAttributesDto } from '../dto/bookAttributes.dto';
+import { CategoryDto } from '../dto/bookAttributes.dto';
 
 export class CategoryService {
-  constructor(private categoryRepository: Repository<CategoryEntity>) {}
+  constructor(private readonly categoryRepository: Repository<CategoryEntity>) {}
 
-  async createCategory(id: number, createCategoryDto: BookAttributesDto) {
-    let category = new CategoryEntity();
+  async createCategory(createCategoryDto: CategoryDto) {
+    const category = await this.categoryRepository.findOneBy({ name: createCategoryDto.name });
+
+    if (category) throw new CustomError(404, 'Category name is taken.');
+
     Object.assign(category, createCategoryDto);
 
-    category = await this.categoryRepository.save(category);
-
-    return category;
+    return await this.categoryRepository.save(category);
   }
 
-  async updateCategory(id: number, updateCategoryDto: BookAttributesDto) {
-    let category = await this.categoryRepository.findOneBy({ id });
+  async updateCategory(id: number, updateCategoryDto: CategoryDto) {
+    const category = await this.categoryRepository.findOneBy({ id });
 
     if (!category) throw new CustomError(404, "Category doesn't exist.");
 
     Object.assign(category, updateCategoryDto);
 
-    category = await this.categoryRepository.save(category);
-
-    return category;
+    return await this.categoryRepository.save(category);
   }
 
   async deleteCategory(id: number) {
@@ -45,7 +44,11 @@ export class CategoryService {
     return categories;
   }
 
-  async getAuthor(id: number) {
+  async getСategory(id: number) {
+    const category = await this.categoryRepository.findOneBy({ id });
+
+    if (!category) throw new CustomError(404, "Category doesn't exist.");
+
     return await this.categoryRepository.findOneBy({ id });
   }
 }

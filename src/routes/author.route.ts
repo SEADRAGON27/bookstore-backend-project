@@ -6,11 +6,12 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { chechRoleGuard } from '../guards/checkRole.guard';
 import { validation } from '../middlewares/validation.middleware';
 import { AuthorDto } from '../dto/author.dto';
+import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 
 const authorService = new AuthorService(authorRepository);
-const authorController = new AuthorController(authorService);
+const authorController = new AuthorController(authorService, winstonLoggerService);
 
 router.post('/create', authMiddleware, chechRoleGuard, validation(AuthorDto), authorController.createAuthor.bind(authorController));
 router.delete('/:id', authMiddleware, chechRoleGuard, authorController.deleteAuthor.bind(authorController));

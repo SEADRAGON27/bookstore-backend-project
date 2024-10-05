@@ -1,4 +1,6 @@
+/* eslint-disable padding-line-between-statements */
 /* eslint-disable prettier/prettier */
+import 'dotenv';
 import { Redis } from 'ioredis';
 import { Brackets, In, MoreThan, Repository, SelectQueryBuilder } from 'typeorm';
 import { BookEntity } from '../entities/book.entity';
@@ -7,16 +9,14 @@ import QueryString from 'qs';
 import { UserEntity } from '../entities/user.entity';
 import { BookDto } from '../dto/book.dto';
 import { CustomError } from '../interfaces/customError';
-import { s3 } from '../configs/s3.config';
-import { logger } from '../logs/logger';
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import 'dotenv';
+import { S3Service } from './s3Service';
 
 export class BookService {
   constructor(
-    private clientRedis: Redis,
-    private bookRepository: Repository<BookEntity>,
-    private userRepository: Repository<UserEntity>,
+    private readonly clientRedis: Redis,
+    private readonly bookRepository: Repository<BookEntity>,
+    private readonly userRepository: Repository<UserEntity>,
+    private readonly s3Servive:S3Service
   ) {}
 
   async getBooksOnTheMainPage(userId: string | null, originalUrl: string): Promise<BookResponseMainPage> {
@@ -234,8 +234,10 @@ export class BookService {
       user.favoriteBooks.push(book);
       book.favoritesCount++;
 
-      await this.userRepository.save(user);
-      await this.bookRepository.save(book);
+      await this.userRepository.manager.transaction(async (manager) => {
+        await manager.save(user);
+        await manager.save(book);
+      });
     }
 
     return book;
@@ -254,26 +256,41 @@ export class BookService {
     if (bookIndex >= 0) {
       user.favoriteBooks.splice(bookIndex, 1);
       book.favoritesCount--;
-
-      await this.userRepository.save(user);
-      await this.bookRepository.save(book);
+      
+      await this.userRepository.manager.transaction(async (manager) => {
+        await manager.save(user);
+        await manager.save(book);
+      });
+      
     }
 
     return book;
   }
 
-  async createBook(userId: string, createBookDto: BookDto): Promise<BookEntity> {
+  async createBook(userId: string, createBookDto: BookDto, image:Express.Multer.File): Promise<BookEntity> {
     const bookTitle = await this.bookRepository.findOneBy({ title: createBookDto.title });
 
     if (bookTitle) throw new CustomError(403, 'Book title already exists, please select another one');
-
+    
+    const {authors,language,publisher,category,genre} = createBookDto;
+    
     const book = new BookEntity();
+    
+    createBookDto.authors = JSON.parse(authors);
+    createBookDto.genre = JSON.parse(genre);
+    createBookDto.publisher = JSON.parse(publisher);
+    createBookDto.category = JSON.parse(category);
+    createBookDto.language = JSON.parse(language);
     
     Object.assign(book, createBookDto);
     
-    book.user = userId as unknown as UserEntity;
+    book.user = await this.userRepository.findOneBy({id:userId});
     
+    const imageLink = await this.s3Servive.uploadImage(image);
+    
+    book.coverImageLink = imageLink;
     return await this.bookRepository.save(book);
+  
   }
 
   async updateBook(userId: string, id: string, updateBookDTO: BookDto): Promise<BookEntity> {
@@ -297,7 +314,7 @@ export class BookService {
     if (!book) throw new CustomError(404, "Book doesn't exist.");
 
     await this.bookRepository.delete({ id });
-    await this.deleteImageS3(book.coverImageLink);
+    await this.s3Servive.deleteImage(book.coverImageLink);
   }
 
   async getPointersLikedBooksByUser(userId: string, books: BookEntity[]): Promise<FavoritedBook[]> {
@@ -319,37 +336,6 @@ export class BookService {
     });
 
     return booksWithFavorited;
-  }
-
-  async uploadImageS3(file: Express.Multer.File): Promise<string> {
-    const uploadParams = {
-      Bucket: process.env.AWS_BUCKET_NAME!,
-      Key: file.originalname,
-      Body: file.buffer,
-    };
-
-    const command = new PutObjectCommand(uploadParams);
-
-    await s3.send(command);
-    const imageUrl = `https://s3.${process.env.AWS_REGION}.amazonaws.com/${process.env.AWS_BUCKET_NAME}/${uploadParams.Key}`;
-    logger.info(`File uploaded successfully ${imageUrl}`);
-
-    return imageUrl;
-  }
-
-  async deleteImageS3(coverImageLink: string): Promise<void> {
-    const s3UrlPrefix = `https://s3.${process.env.AWS_REGION}.amazonaws.com/${process.env.AWS_BUCKET_NAME}`;
-
-    const imagePath = coverImageLink.replace(s3UrlPrefix, '').slice(1);
-
-    const deleteParams = {
-      Bucket: process.env.AWS_BUCKET_NAME!,
-      Key: imagePath,
-    };
-
-    const command = new DeleteObjectCommand(deleteParams);
-    await s3.send(command);
-    logger.info(`File deleted successfully ${coverImageLink}`);
   }
 
   async getBooksLikedByUser(userId: string): Promise<BookEntity[]> {

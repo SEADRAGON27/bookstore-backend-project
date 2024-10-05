@@ -10,22 +10,22 @@ import { validation } from '../middlewares/validation.middleware';
 import { BookDto } from '../dto/book.dto';
 import { chechRoleGuard } from '../guards/checkRole.guard';
 import { bookRepository, userRepository } from '../utils/initializeRepositories';
+import { S3Service } from '../services/s3Service';
+import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
-
-const bookService = new BookService(clientRedis, bookRepository, userRepository);
-const bookController = new BookController(bookService);
+const s3Service = new S3Service();
+const bookService = new BookService(clientRedis, bookRepository, userRepository, s3Service);
+const bookController = new BookController(bookService, winstonLoggerService);
 
 router.get('/', authMiddleware, cacheMiddleware, bookController.getBooksOnTheMainPage.bind(bookController));
 router.get('/category/:name', authMiddleware, cacheMiddleware, bookController.getBooksByCategory.bind(bookController));
 router.get('/search', authMiddleware, cacheMiddleware, bookController.searchBook.bind(bookController));
 router.get('/:title', authMiddleware, bookController.getBook.bind(bookController));
-router.post('/create', authMiddleware, chechRoleGuard, validation(BookDto), bookController.createBook.bind(bookController));
+router.post('/create', authMiddleware, chechRoleGuard, upload.single('image'), validation(BookDto), bookController.createBook.bind(bookController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(BookDto), bookController.updateBook.bind(bookController));
 router.delete('/:id', authMiddleware, chechRoleGuard, bookController.deleteBook.bind(bookController));
 router.get('/liked/all', authMiddleware, authGuard, bookController.getBooksLikedByUser.bind(bookController));
-router.post('/upload-image', authMiddleware, chechRoleGuard, upload.single('image'), bookController.uploadImage.bind(bookController));
-router.post('/delete-image', authMiddleware, chechRoleGuard, bookController.deleteImage.bind(bookController));
 router.post('/:id/favorite', authMiddleware, authGuard, bookController.addBookToFavorites.bind(bookController));
 router.post('/:id/unfavorite', authMiddleware, authGuard, bookController.deleteBookFromFavorites.bind(bookController));
 

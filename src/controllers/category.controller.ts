@@ -1,26 +1,27 @@
 import { NextFunction, Response } from 'express';
 import { ExpressRequest } from '../interfaces/expressRequest.interface';
 import { CategoryService } from '../services/category.service';
-import { logger } from '../logs/logger';
+import { WinstonLoggerService } from '../logs/logger';
+import { exceptionType } from '../utils/exceptionType';
 
 export class CategoryController {
-  constructor(private categoryService: CategoryService) {}
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly logger: WinstonLoggerService,
+  ) {}
 
   async createCategory(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const createCategoryDto = req.body;
-      const userId = +req.user.id;
 
-      const category = await this.categoryService.createCategory(userId, createCategoryDto);
+      const category = await this.categoryService.createCategory(createCategoryDto);
 
       res.status(201).json(category);
-      logger.info({ userId, createCategoryDto }, 'Creating a new category successfully');
-    
+      this.logger.log(`Category created successfully. Category Data: ${JSON.stringify(createCategoryDto)}`);
     } catch (error) {
-      
-        logger.error(error, 'Error creating a new category');
-        next(error);
-    
+      if (exceptionType(error)) this.logger.error(`Error creating category. Error: ${error.message}`);
+
+      next(error);
     }
   }
 
@@ -32,13 +33,11 @@ export class CategoryController {
       const category = await this.categoryService.updateCategory(userId, updateCategoryDto);
 
       res.status(200).json(category);
-      logger.info({ userId, updateCategoryDto }, 'Updating category successfully');
-    
+      this.logger.log(`Category updated successfully. User ID: ${userId}, Updated Data: ${JSON.stringify(updateCategoryDto)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error updating category');
+      if (exceptionType(error)) this.logger.error(`Error updating category. User ID: ${req.user.id}, Category ID: ${req.params.id}. Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 
@@ -49,13 +48,11 @@ export class CategoryController {
       await this.categoryService.deleteCategory(id);
 
       res.status(200).json({ message: 'Category has been deleted.' });
-      logger.info({ id }, 'Deleting a category successfully');
-    
+      this.logger.log(`Category deleted successfully. Category ID: ${id}`);
     } catch (error) {
-      
-      logger.error({ error }, 'Error delating category');
+      if (exceptionType(error)) this.logger.error(`Error deleting category. Category ID: ${req.params.id}. Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 
@@ -63,14 +60,11 @@ export class CategoryController {
     try {
       const categories = await this.categoryService.findAll();
 
-      res.send(200).json(categories);
-      logger.info('Fetching categories successfully');
-    
+      res.status(200).json(categories);
+      this.logger.log('Categories fetched successfully.');
     } catch (error) {
-      
-      logger.error({ error }, 'Error fetching categories');
+      this.logger.error(`Error fetching categories. Error: ${error.message}`);
       next(error);
-    
     }
   }
 
@@ -78,16 +72,14 @@ export class CategoryController {
     try {
       const id = +req.params.id;
 
-      const category = await this.categoryService.getAuthor(id);
+      const category = await this.categoryService.getСategory(id);
 
-      logger.info({ id }, 'Fetching category is successfully');
       res.status(200).json(category);
-    
+      this.logger.log(`Category fetched successfully. Category ID: ${id}`);
     } catch (error) {
-      
-      logger.error({ error }, 'Error fetching category');
+      if (exceptionType(error)) this.logger.error(`Error fetching category. Category ID: ${req.params.id}. Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 }

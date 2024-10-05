@@ -1,94 +1,91 @@
 import { NextFunction, Response } from 'express';
 import { ExpressRequest } from '../interfaces/expressRequest.interface';
-import { logger } from '../logs/logger';
 import { LanguageService } from '../services/language.service';
+import { WinstonLoggerService } from '../logs/logger';
+import { exceptionType } from '../utils/exceptionType';
 
 export class LanguageController {
-  constructor(private languageService: LanguageService) {}
+  constructor(
+    private readonly languageService: LanguageService,
+    private readonly logger: WinstonLoggerService,
+  ) {}
 
   async createLanguage(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const createLanguageDto = req.body;
-      const userId = +req.user.id;
 
-      const language = await this.languageService.createLanguage(userId, createLanguageDto);
+      const language = await this.languageService.createLanguage(createLanguageDto);
 
       res.status(201).json(language);
-      logger.info({ userId, createLanguageDto }, 'Creating a new language successfully');
-    
+
+      this.logger.log(`Language created successfully. Language Data: ${JSON.stringify(createLanguageDto)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error creating a new language');
+      if (exceptionType(error)) this.logger.error(`Error creating language. Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 
   async updateLanguage(req: ExpressRequest, res: Response, next: NextFunction) {
+    const userId = +req.user.id;
+
     try {
       const updateLanguageDto = req.body;
-      const userId = +req.user.id;
 
       const language = await this.languageService.updateLanguage(userId, updateLanguageDto);
 
       res.status(200).json(language);
-      logger.info({ userId, updateLanguageDto }, 'Updating language successfully');
-    
+
+      this.logger.log(`Language updated successfully. User ID: ${userId}, Updated Data: ${JSON.stringify(updateLanguageDto)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error updating language');
+      if (exceptionType(error)) this.logger.error(`Error updating language. User ID: ${userId}, Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 
   async deleteLanguage(req: ExpressRequest, res: Response, next: NextFunction) {
-    try {
-      const id = +req.params.id;
+    const id = +req.params.id;
 
+    try {
       await this.languageService.deleteLanguage(id);
 
-      res.status(200).json({ message: 'language has been deleted.' });
-      logger.info({ id }, 'Deleting a language successfully');
-    
+      res.status(200).json({ message: 'Language has been deleted.' });
+
+      this.logger.log(`Language deleted successfully. Language ID: ${id}`);
     } catch (error) {
-      
-      logger.error({ error }, 'Error delating language');
+      if (exceptionType(error)) this.logger.error(`Error deleting language. Language ID: ${id}, Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 
   async findAll(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
-
       const languages = await this.languageService.findAll();
 
-      res.send(200).json(languages);
-      logger.info('Fetching languages successfully');
-    
+      res.status(200).json(languages);
+
+      this.logger.log('Languages fetched successfully');
     } catch (error) {
-      
-      logger.error({ error }, 'Error fetching languages');
+      this.logger.error(`Error fetching languages. Error: ${error.message}`);
       next(error);
-    
     }
   }
 
   async getLanguages(req: ExpressRequest, res: Response, next: NextFunction) {
-    try {
-      const id = +req.params.id;
+    const id = +req.params.id;
 
+    try {
       const languages = await this.languageService.getLanguage(id);
 
-      logger.info({ id }, 'Fetching languages is successfully');
       res.status(200).json(languages);
-    
+
+      this.logger.log(`Languages fetched successfully. Language ID: ${id}`);
     } catch (error) {
-      
-      logger.error({ error }, 'Error fetching languages');
+      if (exceptionType(error)) this.logger.error(`Error fetching languages. Language ID: ${id}, Error: ${error.message}`);
+
       next(error);
-    
     }
   }
 }

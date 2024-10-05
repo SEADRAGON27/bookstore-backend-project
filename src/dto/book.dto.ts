@@ -1,48 +1,54 @@
-import { IsNumber, IsISBN, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNumber, IsISBN, IsNotEmpty, IsOptional, IsArray, IsString } from 'class-validator';
 import { LanguageEntity } from '../entities/language.entity';
 import { PublisherEntity } from '../entities/publishers.entity';
 import { AuthorEntity } from '../entities/author.entity';
 import { GenreEntity } from '../entities/genre.entity';
 import { CategoryEntity } from '../entities/category.entity';
+import { Type } from 'class-transformer';
 
 export class BookDto {
   @IsNotEmpty()
   title: string;
 
   @IsNumber()
+  @Type(() => Number)
   pagesQuantity: number;
 
   @IsNotEmpty()
   summary: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
+  @Type(() => Number)
   originalPrice: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
+  @Type(() => Number)
   discountedPrice?: number;
 
   @IsNotEmpty()
-  language: LanguageEntity;
+  authors: string;
+
+  @IsNotEmpty()
+  language: string;
 
   @IsISBN()
   isbn: string;
 
   @IsNotEmpty()
-  category: CategoryEntity;
+  category: string;
 
-  @IsNumber()
+  @IsNotEmpty()
+  @Type(() => Number)
   publicationYear: number;
 
   @IsNotEmpty()
-  publisher: PublisherEntity;
-
-  @IsNotEmpty()
-  authors: AuthorEntity[];
+  publisher: string;
 
   @IsNumber()
+  @Type(() => Number)
   availableBooks: number;
 
   @IsNotEmpty()
-  genre: GenreEntity;
+  genre: string;
 }

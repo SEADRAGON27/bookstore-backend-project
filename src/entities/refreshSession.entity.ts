@@ -6,7 +6,7 @@ export class RefreshSessionEntity {
   @PrimaryGeneratedColumn()
   id: string;
 
-  @Column({ name: 'finger_print' })
+  @Column({ name: 'fingerprint' })
   @Index('finger_print_index')
   fingerprint: string;
 

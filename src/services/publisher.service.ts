@@ -1,31 +1,30 @@
 import { Repository } from 'typeorm';
 import { CustomError } from '../interfaces/customError';
-import { BookAttributesDto } from '../dto/bookAttributes.dto';
+import { PublisherDto } from '../dto/bookAttributes.dto';
 import { PublisherEntity } from '../entities/publishers.entity';
 import QueryString from 'qs';
 
 export class PublisherService {
-  constructor(private publisherRepository: Repository<PublisherEntity>) {}
+  constructor(private readonly publisherRepository: Repository<PublisherEntity>) {}
 
-  async createPublisher(id: number, createPublisherDto: BookAttributesDto) {
-    let publisher = new PublisherEntity();
+  async createPublisher(createPublisherDto: PublisherDto) {
+    const publisher = await this.publisherRepository.findOneBy({ name: createPublisherDto.name });
+
+    if (publisher) throw new CustomError(404, 'Publisher name is taken.');
+
     Object.assign(publisher, createPublisherDto);
 
-    publisher = await this.publisherRepository.save(publisher);
-
-    return publisher;
+    return await this.publisherRepository.save(publisher);
   }
 
-  async updatePublisher(id: number, updatePublisherDto: BookAttributesDto) {
-    let publisher = await this.publisherRepository.findOneBy({ id });
+  async updatePublisher(id: number, updatePublisherDto: PublisherDto) {
+    const publisher = await this.publisherRepository.findOneBy({ id });
 
     if (!publisher) throw new CustomError(404, "Publisher doesn't exist.");
 
     Object.assign(publisher, updatePublisherDto);
 
-    publisher = await this.publisherRepository.save(publisher);
-
-    return publisher;
+    return await this.publisherRepository.save(publisher);
   }
 
   async deletePublisher(id: number) {
@@ -74,6 +73,10 @@ export class PublisherService {
   }
 
   async getPublisher(id: number) {
+    const publisher = await this.publisherRepository.findOneBy({ id });
+
+    if (!publisher) throw new CustomError(404, 'Publisher doesn`t exist');
+
     return await this.publisherRepository.findOneBy({ id });
   }
 }

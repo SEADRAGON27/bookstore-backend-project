@@ -1,10 +1,14 @@
 import { ExpressRequest } from '../interfaces/expressRequest.interface';
-import { logger } from '../logs/logger';
+import { WinstonLoggerService } from '../logs/logger';
 import { BookService } from '../services/book.service';
 import { NextFunction, Request, Response } from 'express';
+import { exceptionType } from '../utils/exceptionType';
 
 export class BookController {
-  constructor(private bookService: BookService) {}
+  constructor(
+    private readonly bookService: BookService,
+    private readonly logger: WinstonLoggerService,
+  ) {}
 
   async getBooksOnTheMainPage(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
@@ -14,13 +18,11 @@ export class BookController {
       const books = await this.bookService.getBooksOnTheMainPage(userId, originalUrl);
 
       res.status(200).json(books);
-      logger.info({ userId, originalUrl }, 'Fetching books for the main page successfully');
-    
+
+      this.logger.log(`Fetching books for the main page successfully. User ID: ${userId}, URL: ${originalUrl}`);
     } catch (error) {
-      
-      logger.error(error, 'Error fetching books for the main page');
+      this.logger.error(`Error fetching books for the main page: ${error.message}`);
       next(error);
-    
     }
   }
 
@@ -34,13 +36,11 @@ export class BookController {
       const bookListWithCursor = await this.bookService.getBooksByCategory(userId, category, originalUrl, query);
 
       res.status(200).json(bookListWithCursor);
-      logger.info({ userId, category, originalUrl, query }, 'Fetching books by category successfully');
-    
+
+      this.logger.log(`Fetching books by category '${category}' successfully. User ID: ${userId}, URL: ${originalUrl}`);
     } catch (error) {
-      
-      logger.error(error, 'Error fetching books by category ');
+      this.logger.error(`Error fetching books by category '${req.params.name}': ${error.message}`);
       next(error);
-    
     }
   }
 
@@ -53,13 +53,11 @@ export class BookController {
       const bookListWithCursor = await this.bookService.searchBook(userId, originalUrl, query);
 
       res.status(200).json(bookListWithCursor);
-      logger.info({ userId, originalUrl, query }, 'Searching books successfully');
-    
+
+      this.logger.log(`Searching books successfully. User ID: ${userId}, URL: ${originalUrl}, Query: ${JSON.stringify(query)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error searching books');
+      this.logger.error(`Error searching books: ${error.message}`);
       next(error);
-    
     }
   }
 
@@ -69,17 +67,16 @@ export class BookController {
       const book = await this.bookService.getBook(title);
 
       res.status(200).json(book);
-      logger.info({ title }, 'Fetching book details successfully');
-    
+
+      this.logger.log(`Fetching book details for title '${title}' successfully.`);
     } catch (error) {
-      
-      logger.error(error, 'Error fetching book details');
+      if (exceptionType(error)) this.logger.error(`Error fetching book details for title '${req.params.title}': ${error.message}`);
+
       next(error);
-    
     }
   }
 
-  async addBookFromFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
+  async addBookToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
       const id = req.params.id;
@@ -87,17 +84,15 @@ export class BookController {
       const comment = await this.bookService.addBookToFavorites(userId, id);
 
       res.status(200).json(comment);
-      logger.info({ userId, id }, 'Adding book to favorites successfully');
-    
+
+      this.logger.log(`Adding book ID ${id} to favorites for user ID ${userId} successfully.`);
     } catch (error) {
-      
-      logger.error(error, 'Error adding book to favorites');
+      this.logger.error(`Error adding book ID ${req.params.id} to favorites: ${error.message}`);
       next(error);
-    
     }
   }
 
-  async deleteBookToFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
+  async deleteBookFromFavorites(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
       const id = req.params.id;
@@ -105,31 +100,29 @@ export class BookController {
       const comment = await this.bookService.deleteBookFromFavorites(userId, id);
 
       res.status(200).json(comment);
-      logger.info({ userId, id }, 'Deleting book from favorites');
-    
+
+      this.logger.log(`Deleting book ID ${id} from favorites for user ID ${userId} successfully.`);
     } catch (error) {
-      
-      logger.error(error, 'Error deleting book from favorites');
+      this.logger.error(`Error deleting book ID ${req.params.id} from favorites: ${error.message}`);
       next(error);
-    
     }
   }
 
   async createBook(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      const createBookDto = req.body;
+      const image = req.file;
+      const createBookDto = Object.assign({}, req.body);
 
-      const book = await this.bookService.createBook(userId, createBookDto);
+      const book = await this.bookService.createBook(userId, createBookDto, image);
 
       res.status(201).json(book);
-      logger.info({ userId, createBookDto }, 'Creating a new book successfully');
-    
+
+      this.logger.log(`Creating a new book successfully. User ID: ${userId}, Data: ${JSON.stringify(createBookDto)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error creating a new book');
+      if (exceptionType(error)) this.logger.error(`Error creating a new book: ${error.message}`);
+
       next(error);
-    
     }
   }
 
@@ -142,13 +135,12 @@ export class BookController {
       const book = await this.bookService.updateBook(userId, id, updateBookDTO);
 
       res.status(200).json(book);
-      logger.info({ userId, id, updateBookDTO }, 'Updating book details successfully');
-    
+
+      this.logger.log(`Updating book ID ${id} successfully. User ID: ${userId}, Data: ${JSON.stringify(updateBookDTO)}`);
     } catch (error) {
-      
-      logger.error(error, 'Error updating book details');
+      if (error) this.logger.error(`Error updating book ID ${req.params.id}: ${error.message}`);
+
       next(error);
-    
     }
   }
 
@@ -159,64 +151,27 @@ export class BookController {
       await this.bookService.deleteBook(id);
 
       res.status(200).json({ message: 'Book has been deleted.' });
-      logger.info({ id }, 'Deleting a book successfully');
-    
+
+      this.logger.log(`Deleting book ID ${id} successfully.`);
     } catch (error) {
-      
-      logger.error(error, 'Error deleting a book');
+      if (exceptionType(error)) this.logger.error(`Error deleting book ID ${req.params.id}: ${error.message}`);
+
       next(error);
-    
     }
   }
 
   async getBooksLikedByUser(req: ExpressRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id;
-      
+
       const books = await this.bookService.getBooksLikedByUser(userId);
 
       res.status(200).json(books);
-      logger.info({ userId }, 'Fetching books liked by user successfully');
-    
+
+      this.logger.log(`Fetching books liked by user ID ${userId} successfully.`);
     } catch (error) {
-      
-      logger.error(error, 'Error fetching books liked by user');
+      this.logger.error(`Error fetching books liked by user ID ${req.user.id}: ${error.message}`);
       next(error);
-    
-    }
-  }
-
-  async uploadImage(req: ExpressRequest, res: Response, next: NextFunction) {
-    try {
-      const image = req.file;
-      
-      const imageLink = await this.bookService.uploadImageS3(image);
-      
-      res.status(200).json(imageLink);
-      logger.info({ image }, 'Uploading image successfully');
-    
-    } catch (error) {
-      
-      logger.error(error, 'Error uploading image');
-      next(error);
-    
-    }
-  }
-
-  async deleteImage(req: ExpressRequest, res: Response, next: NextFunction) {
-    try {
-      const imageLink = req.body.imageLink;
-
-      await this.bookService.deleteImageS3(imageLink);
-
-      res.status(200).json({ message: 'Image has been deleted.' });
-
-      logger.info({ imageLink }, 'Deleting image successfully');
-    } catch (error) {
-      
-      logger.error(error, 'Error deleting image');
-      next(error);
-    
     }
   }
 }

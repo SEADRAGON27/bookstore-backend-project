@@ -2,7 +2,6 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import './utils/cronJob';
 import express, { Express } from 'express';
-import { logger } from './logs/logger';
 import { errorHandler } from './middlewares/errorHandler.middleware';
 import { dataSource } from './configs/orm.config';
 import cookieParser from 'cookie-parser';
@@ -18,8 +17,9 @@ import categoryRoute from './routes/category.route';
 import genreRoute from './routes/genre.route';
 import publisherRoute from './routes/publisher.route';
 import languageRoute from './routes/language.route';
-
+import paymentRoute from './routes/payment.route';
 import cors from 'cors';
+
 const app: Express = express();
 
 app.use(helmet());
@@ -45,18 +45,15 @@ app.use('/categories', categoryRoute);
 app.use('/languages', languageRoute);
 app.use('/genres', genreRoute);
 app.use('/publishers', publisherRoute);
+app.use('/payments', paymentRoute);
 
 app.use(errorHandler);
 
 dataSource
   .initialize()
   .then(() => {
-    logger.info('Data Source has been initialized!');
-    app.listen(3000, () => {
-      logger.info('Server started on port 8000');
-    });
+    app.listen(8000, () => console.log(`Example app listening on port 8000`));
   })
   .catch((err) => {
     console.log(err);
-    logger.fatal(`Error during Data Source initialization:${err}`);
   });

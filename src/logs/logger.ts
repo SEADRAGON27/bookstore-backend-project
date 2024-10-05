@@ -1,16 +1,34 @@
-import path from 'path';
-import { pino } from 'pino';
+import * as winston from 'winston';
+import { ElasticsearchTransport } from 'winston-elasticsearch';
 
-const filePath = path.join(__dirname, 'app.log');
+export class WinstonLoggerService {
+  private readonly logger: winston.Logger;
 
-export const logger = pino({
-  transport: {
-    targets: [
-      {
-        level: 'info',
-        target: 'pino/file',
-        options: { destination: filePath },
-      },
-    ],
-  },
-});
+  constructor() {
+    const esTransportOpts = {
+      level: 'info',
+      clientOpts: { node: process.env.ELASTICSEARCH_HOST },
+    };
+
+    this.logger = winston.createLogger({
+      level: 'info',
+      format: winston.format.json(),
+      transports: [
+        new ElasticsearchTransport(esTransportOpts),
+        new winston.transports.Console({
+          format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+        }),
+      ],
+    });
+  }
+
+  log(message: string) {
+    this.logger.info(message);
+  }
+
+  error(message: string) {
+    this.logger.error(message);
+  }
+}
+
+export const winstonLoggerService = new WinstonLoggerService();

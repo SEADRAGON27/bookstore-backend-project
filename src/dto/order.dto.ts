@@ -1,8 +1,8 @@
 import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber } from 'class-validator';
 
-export class OrderDto {
+export class CreateOrderDto {
   @IsNotEmpty()
-  userName: string;
+  username: string;
 
   @IsNotEmpty()
   lastName: string;
