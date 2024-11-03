@@ -11,7 +11,11 @@ export class GenreService {
 
     if (genre) throw new CustomError(404, 'Genre name is taken.');
 
-    return await this.genreRepository.save(genre);
+    const createGenre = new GenreEntity();
+
+    Object.assign(createGenre, createGenreDto);
+
+    return await this.genreRepository.save(createGenre);
   }
 
   async updateGenre(id: number, updateGenreDto: GenreDto) {
@@ -47,6 +51,6 @@ export class GenreService {
 
     if (!genre) throw new CustomError(404, "Genre doesn't exist.");
 
-    return await this.genreRepository.findOneBy({ id });
+    return genre;
   }
 }

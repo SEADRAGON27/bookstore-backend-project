@@ -12,9 +12,11 @@ export class PublisherService {
 
     if (publisher) throw new CustomError(404, 'Publisher name is taken.');
 
-    Object.assign(publisher, createPublisherDto);
+    const createPublisher = new PublisherEntity();
 
-    return await this.publisherRepository.save(publisher);
+    Object.assign(createPublisher, createPublisherDto);
+
+    return await this.publisherRepository.save(createPublisher);
   }
 
   async updatePublisher(id: number, updatePublisherDto: PublisherDto) {
@@ -77,6 +79,6 @@ export class PublisherService {
 
     if (!publisher) throw new CustomError(404, 'Publisher doesn`t exist');
 
-    return await this.publisherRepository.findOneBy({ id });
+    return publisher;
   }
 }

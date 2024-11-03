@@ -8,12 +8,11 @@ import { CreateOrderDto } from '../dto/order.dto';
 import { bookRepository, orderRepository, userRepository } from '../utils/initializeRepositories';
 import { UpdateBookDto } from '../dto/updateBook.dto';
 import { notificationService } from '../services/notification.service';
-import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 
 const orderService = new OrderService(orderRepository, userRepository, bookRepository, notificationService);
-const orderController = new OrderController(orderService, winstonLoggerService);
+const orderController = new OrderController(orderService);
 
 router.post('/checkout', authMiddleware, validation(CreateOrderDto), orderController.createOrder.bind(orderController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(UpdateBookDto), orderController.updateOrder.bind(orderController));

@@ -6,12 +6,11 @@ import { PublisherController } from '../controllers/publisher.controller';
 import { PublisherService } from '../services/publisher.service';
 import { validation } from '../middlewares/validation.middleware';
 import { BookAttributesDto } from '../dto/bookAttributes.dto';
-import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 
 const publisherService = new PublisherService(publisherRepository);
-const publisherController = new PublisherController(publisherService, winstonLoggerService);
+const publisherController = new PublisherController(publisherService);
 
 router.post('/create', authMiddleware, chechRoleGuard, validation(BookAttributesDto), publisherController.createPublisher.bind(publisherController));
 router.delete('/:id', authMiddleware, chechRoleGuard, publisherController.deletePublisher.bind(publisherController));

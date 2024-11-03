@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { BookEntity } from '../entities/book.entity';
 import { UserEntity } from '../entities/user.entity';

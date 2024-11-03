@@ -11,9 +11,11 @@ export class LanguageService {
 
     if (language) throw new CustomError(404, 'Language name is taken.');
 
-    Object.assign(language, createLanguageDto);
+    const createLanguage = new LanguageEntity();
 
-    return await this.languageRepository.save(language);
+    Object.assign(createLanguage, createLanguageDto);
+
+    return await this.languageRepository.save(createLanguage);
   }
 
   async updateLanguage(id: number, updateLanguageDto: LanguageDto) {
@@ -49,6 +51,6 @@ export class LanguageService {
 
     if (!language) throw new CustomError(404, "Language doesn't exist.");
 
-    return await this.languageRepository.findOneBy({ id });
+    return language;
   }
 }

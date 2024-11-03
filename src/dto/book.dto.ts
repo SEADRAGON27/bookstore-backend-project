@@ -1,9 +1,4 @@
-import { IsNumber, IsISBN, IsNotEmpty, IsOptional, IsArray, IsString } from 'class-validator';
-import { LanguageEntity } from '../entities/language.entity';
-import { PublisherEntity } from '../entities/publishers.entity';
-import { AuthorEntity } from '../entities/author.entity';
-import { GenreEntity } from '../entities/genre.entity';
-import { CategoryEntity } from '../entities/category.entity';
+import { IsNumber, IsISBN, IsNotEmpty, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BookDto {

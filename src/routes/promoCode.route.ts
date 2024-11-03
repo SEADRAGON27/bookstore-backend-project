@@ -8,12 +8,11 @@ import { CreatePromoCodeDto } from '../dto/createPromoCode.dto';
 import { promoCodeRepository, userRepository } from '../utils/initializeRepositories';
 import { CheckPromoCode } from '../dto/checkPromoCode.dto';
 import { UpdatePromoCodeDto } from '../dto/updatePromoCode.dto';
-import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 
 const promoCodeService = new PromoCodeService(promoCodeRepository, userRepository);
-const promoCodeController = new PromoCodeController(promoCodeService, winstonLoggerService);
+const promoCodeController = new PromoCodeController(promoCodeService);
 
 router.post('/create', authMiddleware, chechRoleGuard, validation(CreatePromoCodeDto), promoCodeController.createPromoCode.bind(promoCodeController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(UpdatePromoCodeDto), promoCodeController.updatePromoCode.bind(promoCodeController));

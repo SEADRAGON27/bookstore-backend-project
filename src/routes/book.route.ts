@@ -11,12 +11,11 @@ import { BookDto } from '../dto/book.dto';
 import { chechRoleGuard } from '../guards/checkRole.guard';
 import { bookRepository, userRepository } from '../utils/initializeRepositories';
 import { S3Service } from '../services/s3Service';
-import { winstonLoggerService } from '../logs/logger';
 
 const router = Router();
 const s3Service = new S3Service();
 const bookService = new BookService(clientRedis, bookRepository, userRepository, s3Service);
-const bookController = new BookController(bookService, winstonLoggerService);
+const bookController = new BookController(bookService);
 
 router.get('/', authMiddleware, cacheMiddleware, bookController.getBooksOnTheMainPage.bind(bookController));
 router.get('/category/:name', authMiddleware, cacheMiddleware, bookController.getBooksByCategory.bind(bookController));

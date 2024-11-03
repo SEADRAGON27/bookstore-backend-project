@@ -6,13 +6,12 @@ import { authGuard } from '../guards/auth.guard';
 import { CommentDto } from '../dto/comment.dto';
 import { validation } from '../middlewares/validation.middleware';
 import { bookRepository, commentRepository, userRepository } from '../utils/initializeRepositories';
-import { winstonLoggerService } from '../logs/logger';
 import { notificationService } from '../services/notification.service';
 
 const router = Router();
 
 const commentService = new CommentService(userRepository, commentRepository, bookRepository, notificationService);
-const commentController = new CommentController(commentService, winstonLoggerService);
+const commentController = new CommentController(commentService);
 
 router.post('/create/:bookId', authMiddleware, authGuard, validation(CommentDto), commentController.createComment.bind(commentController));
 router.post('/:id/favorite', authMiddleware, authGuard, commentController.addCommentToFavorites.bind(commentController));

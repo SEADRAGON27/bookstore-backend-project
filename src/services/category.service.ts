@@ -11,9 +11,11 @@ export class CategoryService {
 
     if (category) throw new CustomError(404, 'Category name is taken.');
 
-    Object.assign(category, createCategoryDto);
+    const createCategory = new CategoryEntity();
 
-    return await this.categoryRepository.save(category);
+    Object.assign(createCategory, createCategoryDto);
+
+    return await this.categoryRepository.save(createCategory);
   }
 
   async updateCategory(id: number, updateCategoryDto: CategoryDto) {
@@ -49,6 +51,6 @@ export class CategoryService {
 
     if (!category) throw new CustomError(404, "Category doesn't exist.");
 
-    return await this.categoryRepository.findOneBy({ id });
+    return category;
   }
 }

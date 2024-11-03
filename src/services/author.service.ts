@@ -12,9 +12,11 @@ export class AuthorService {
 
     if (author) throw new CustomError(404, 'Author name is taken.');
 
-    Object.assign(author, createAuthorDto);
+    const createAuthor = new AuthorEntity();
 
-    return await this.authorRepository.save(author);
+    Object.assign(createAuthor, createAuthorDto);
+
+    return await this.authorRepository.save(createAuthor);
   }
 
   async updateAuthor(id: number, updateAuthorDto: AuthorDto) {

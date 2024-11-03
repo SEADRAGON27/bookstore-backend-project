@@ -18,11 +18,13 @@ export class PromoCodeService {
 
     if (promoCode) throw new CustomError(404, 'Promo code is taken');
 
-    Object.assign(promoCode, createPromoCodeDto);
+    const createPromoCode = new PromoCodeEntity();
 
-    promoCode.user = await this.userRepository.findOneBy({ id: userId });
+    Object.assign(createPromoCode, createPromoCodeDto);
 
-    return await this.promoCodeRepository.save(promoCode);
+    createPromoCode.user = await this.userRepository.findOneBy({ id: userId });
+
+    return await this.promoCodeRepository.save(createPromoCode);
   }
 
   async updatePromoCode(id: number, userId: string, updatePromoCodeDto: UpdatePromoCodeDto): Promise<PromoCodeEntity> {
