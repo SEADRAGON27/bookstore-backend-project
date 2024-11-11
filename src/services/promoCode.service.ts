@@ -2,7 +2,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { PromoCodeEntity } from '../entities/promoCode.entity';
 import { CreatePromoCodeDto } from '../dto/createPromoCode.dto';
 import { UserEntity } from '../entities/user.entity';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import QueryString from 'qs';
 import { CheckPromoCode } from '../dto/checkPromoCode.dto';
 import { UpdatePromoCodeDto } from '../dto/updatePromoCode.dto';

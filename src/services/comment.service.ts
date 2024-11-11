@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { CommentEntity } from '../entities/comment.entity';
 import { UserEntity } from '../entities/user.entity';
 import { CommentDto } from '../dto/comment.dto';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import QueryString from 'qs';
 import { BookEntity } from '../entities/book.entity';
 import { NotificationService } from './notification.service';

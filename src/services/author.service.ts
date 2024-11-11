@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { AuthorEntity } from '../entities/author.entity';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { AuthorDto } from '../dto/author.dto';
 import QueryString from 'qs';
 

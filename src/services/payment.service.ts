@@ -5,7 +5,7 @@ import { OrderEntity } from '../entities/order.entity';
 import { Repository } from 'typeorm';
 import { BookEntity } from '../entities/book.entity';
 import { NotificationService } from './notification.service';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 
 export class PaymentService {
   private liqPayPrivateKey: string;

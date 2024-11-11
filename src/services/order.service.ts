@@ -2,7 +2,7 @@ import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { OrderEntity } from '../entities/order.entity';
 import { CreateOrderDto } from '../dto/order.dto';
 import { UpdateOrderDto } from '../dto/updateOrder.dto';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { UserEntity } from '../entities/user.entity';
 import { v4 as uuidv4 } from 'uuid';
 import QueryString from 'qs';

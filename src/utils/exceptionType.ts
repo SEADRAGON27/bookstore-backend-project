@@ -1,4 +1,4 @@
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from './customError';
 
 export function exceptionType(exception) {
   if (exception instanceof CustomError) {

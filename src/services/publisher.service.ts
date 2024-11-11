@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { PublisherDto } from '../dto/bookAttributes.dto';
 import { PublisherEntity } from '../entities/publishers.entity';
 import QueryString from 'qs';

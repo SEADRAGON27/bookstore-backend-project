@@ -3,7 +3,7 @@ import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { CreateUserResponse, UserResponse } from '../interfaces/userResponse.interface';
 import { RefreshSessionEntity } from '../entities/refreshSession.entity';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { compare } from 'bcrypt';
 import { sign, verify } from 'jsonwebtoken';
 import { CreateUserDto, CreateUserGoogleDto } from '../dto/createUser.dto';

@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { CategoryEntity } from '../entities/category.entity';
 import { CategoryDto } from '../dto/bookAttributes.dto';
 

@@ -8,7 +8,7 @@ import { BookResponse, BookResponseMainPage, FavoritedBook } from '../interfaces
 import QueryString from 'qs';
 import { UserEntity } from '../entities/user.entity';
 import { BookDto } from '../dto/book.dto';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { S3Service } from './s3Service';
 
 export class BookService {

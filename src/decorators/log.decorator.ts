@@ -1,9 +1,9 @@
 import { instanceToPlain } from 'class-transformer';
-import { CustomError } from '../interfaces/customError';
+import { CustomError } from '../utils/customError';
 import { winstonLoggerService } from '../logs/logger';
 
 export function Log(logOptions: Record<string, boolean>) {
-  return function (target, key, descriptor) {
+  return function (target: any, key: string, descriptor: TypedPropertyDescriptor<any>) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args) {
