@@ -27,6 +27,7 @@ export class UserController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
+      sameSite: 'strict',
       maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
     });
 
@@ -58,6 +59,7 @@ export class UserController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
+      sameSite: 'strict',
       maxAge: +process.env.REFRESH_TOKEN_EXPIRATION_15DAYS,
     });
 
@@ -90,6 +92,7 @@ export class UserController {
     const { accessToken, refreshToken, tokenExpiration } = await this.userService.refresh(currentRefreshToken, fingerprint);
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
+      sameSite: 'strict',
       maxAge: +process.env.REFRESH_TOKEN_EXPIRATION_15DAYS,
     });
 
@@ -106,6 +109,7 @@ export class UserController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
+      sameSite: 'strict',
       maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
     });
 
@@ -156,6 +160,7 @@ export class UserController {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
+      sameSite: 'strict',
       maxAge: Number(process.env.REFRESH_TOKEN_EXPIRATION_15DAYS),
     });
 
