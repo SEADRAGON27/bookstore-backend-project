@@ -24,9 +24,9 @@ export class CommentEntity {
   @JoinColumn({ name: 'parent_comment' })
   parentComment: CommentEntity;
 
-  @ManyToOne(() => UserEntity, (user) => user.comments)
+  @ManyToOne(() => UserEntity, (user) => user.comments, { onDelete: 'CASCADE' })
   user: UserEntity;
 
-  @ManyToOne(() => BookEntity, (book) => book.comments)
+  @ManyToOne(() => BookEntity, (book) => book.comments, { onDelete: 'CASCADE' })
   book: BookEntity;
 }
