@@ -87,9 +87,9 @@ export class BookEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   updateAt: Date;
 
-  @ManyToOne(() => UserEntity, (user) => user.books, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => UserEntity, (user) => user.books, { nullable: true })
   user?: UserEntity;
 
-  @OneToMany(() => CommentEntity, (comment) => comment.book, { onDelete: 'CASCADE' })
+  @OneToMany(() => CommentEntity, (comment) => comment.book)
   comments?: CommentEntity[];
 }

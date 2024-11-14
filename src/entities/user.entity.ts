@@ -29,11 +29,11 @@ export class UserEntity {
   @Column({ nullable: true, unique: true, name: 'confirmation_token' })
   confirmationToken: string | null;
 
-  @OneToMany(() => RefreshSessionEntity, (refreshSession) => refreshSession.user, { onDelete: 'CASCADE' })
+  @OneToMany(() => RefreshSessionEntity, (refreshSession) => refreshSession.user)
   @JoinColumn({ name: 'refresh_session' })
   refreshSession: RefreshSessionEntity[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.user, { onDelete: 'CASCADE' })
+  @OneToMany(() => CommentEntity, (comment) => comment.user)
   comments: CommentEntity[];
 
   @ManyToMany(() => CommentEntity)

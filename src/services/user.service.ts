@@ -295,7 +295,6 @@ export class UserService {
         refreshToken,
         user: { ...createdUser },
       });
-      delete createdUser.password;
 
       return { refreshToken, user: { ...createdUser } };
     }
