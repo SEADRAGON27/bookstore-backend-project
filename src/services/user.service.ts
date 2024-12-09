@@ -54,7 +54,7 @@ export class UserService {
       user,
     });
 
-    await this.notificationService.sendVerificationEmail(user.email, user.confirmationToken);
+    //await this.notificationService.sendVerificationEmail(user.email, user.confirmationToken);
   }
 
   async loginUser(loginUserDto: LoginUserDto, fingerprint: string): Promise<CreateUserResponse> {
@@ -200,7 +200,7 @@ export class UserService {
     let payload;
 
     try {
-      payload = verify(currentRefreshToken, process.env.SECRET_PHRASE_ACCESS_TOKEN);
+      payload = verify(currentRefreshToken, process.env.SECRET_PHRASE_REFRESH_TOKEN);
     } catch (err) {
       throw new CustomError(401, 'Forbiden');
     }
@@ -208,7 +208,7 @@ export class UserService {
     await this.refreshSessionRepository.delete(refreshSession.id);
 
     const user = await this.userRepository.findOneBy({
-      username: payload.id,
+      id: payload.id,
     });
 
     const accessToken: string = this.generateAccessToken(user);

@@ -276,8 +276,10 @@ export class BookService {
     
     const book = new BookEntity();
     
-    createBookDto.authors = JSON.parse(authors);
+    
+    
     createBookDto.genre = JSON.parse(genre);
+    createBookDto.authors = JSON.parse(authors);
     createBookDto.publisher = JSON.parse(publisher);
     createBookDto.category = JSON.parse(category);
     createBookDto.language = JSON.parse(language);
@@ -286,7 +288,7 @@ export class BookService {
     
     book.user = await this.userRepository.findOneBy({id:userId});
     
-    const imageLink = await this.s3Servive.uploadImage(image);
+    const imageLink = 'link'//await this.s3Servive.uploadImage(image);
     
     book.coverImageLink = imageLink;
     return await this.bookRepository.save(book);

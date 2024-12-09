@@ -1,10 +1,12 @@
-import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePromoCodeDto {
+  @IsString()
   @IsNotEmpty()
   code: string;
 
   @IsNumber()
+  @IsNotEmpty()
   discountPercent: number;
 
   @IsOptional()
