@@ -101,7 +101,7 @@ export class UserController {
 
   @Log({})
   async confirmEmailForRegistration(req: Request, res: Response, next: NextFunction) {
-    const token = req.query.token as string;
+    const token = req.body.token as string;
     const fingerprint = req.fingerprint.hash;
 
     const { user, refreshToken } = await this.userService.confirmEmail(token, fingerprint);
@@ -136,15 +136,11 @@ export class UserController {
   }
 
   async googleAuthRedirect(req: Request, res: Response) {
+    console.log('success');
     const token = req.user['accessToken'];
     const host = process.env.HOST;
 
     return res.redirect(`${host}/users/confirm-google-email?token=${token}`);
-  }
-
-  async confirmGoogleEmail(req: Request, res: Response) {
-    const token = req.query.token;
-    res.status(200).json({ token });
   }
 
   @Log({ body: true })

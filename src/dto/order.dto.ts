@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 
 export class CreateOrderDto {
   @IsString()
@@ -20,7 +20,9 @@ export class CreateOrderDto {
   @IsNotEmpty()
   city: string;
 
-  @IsString()
+  @IsIn(['card', 'cash'], {
+    message: 'paymentMethod must be correct',
+  })
   @IsNotEmpty()
   paymentMethod: string;
 
@@ -28,11 +30,13 @@ export class CreateOrderDto {
   @IsNotEmpty()
   totalSum: number;
 
-  @IsNumber()
+  @IsArray()
   @IsNotEmpty()
-  books: number[];
+  books: string[];
 
-  @IsString()
+  @IsIn(['Nova Poshta', 'pickup'], {
+    message: 'deliveryMethod must be correct',
+  })
   @IsNotEmpty()
   deliveryMethod: string;
 

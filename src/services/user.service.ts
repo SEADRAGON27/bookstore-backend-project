@@ -54,7 +54,7 @@ export class UserService {
       user,
     });
 
-    //await this.notificationService.sendVerificationEmail(user.email, user.confirmationToken);
+    await this.notificationService.sendVerificationEmail(user.email, user.confirmationToken);
   }
 
   async loginUser(loginUserDto: LoginUserDto, fingerprint: string): Promise<CreateUserResponse> {

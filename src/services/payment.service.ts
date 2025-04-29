@@ -17,7 +17,7 @@ export class PaymentService {
     this.liqPayPrivateKey = process.env.LIQ_PAY_PRIVATE_KEY;
   }
 
-  async generatePaymentForm(orderId: string, amount: number): Promise<string> {
+  async generatePaymentForm(orderId: string): Promise<string> {
     const order = await this.orderRepository.findOneBy({ id: orderId });
 
     if (!order) throw new CustomError(404, "Order doesn't exist");
@@ -26,15 +26,18 @@ export class PaymentService {
       version: 3,
       public_key: process.env.LIQ_PAY_PUBLIC_KEY,
       action: 'pay',
-      amount: amount,
+      amount: order.totalSum,
       currency: 'USD',
       description: 'Payment',
       order_id: orderId,
       server_url: process.env.SERVER_CALLBACK,
+      result_url: `${process.env.CLIENT_URL}`,
     };
 
     const data = Buffer.from(JSON.stringify(paymentData)).toString('base64');
     const signature = this.strToSign(this.liqPayPrivateKey + data + this.liqPayPrivateKey);
+
+    console.log(data);
 
     const htmlForm = getHtmlForm(signature, data);
 
@@ -81,10 +84,6 @@ export class PaymentService {
 
         return orderUpdated.id;
       }
-
-      return false;
     }
-
-    return false;
   }
 }

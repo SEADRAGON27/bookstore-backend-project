@@ -105,7 +105,7 @@ export class BookService {
 
     const nextCursor = hasNextPage ? booksWithFavorited[booksWithFavorited.length - 1].book.id : null;
 
-    if (booksWithFavorited.length >= 1 && !userId) await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(booksWithFavorited));
+    //if (booksWithFavorited.length >= 1 && !userId) await this.clientRedis.setex(originalUrl, 3600000, JSON.stringify(booksWithFavorited));
 
     const bookListWithCursor = {
       books: booksWithFavorited,
@@ -121,9 +121,12 @@ export class BookService {
   }
   
   addPrice(query: QueryString.ParsedQs,queryBuilder: SelectQueryBuilder<BookEntity>){
+   
+    
     if(query.price){
-    const price = query.price as string;
+      const price = query.price as string;
     const priceSorted = price.split('-');
+    console.log(priceSorted);
     queryBuilder.andWhere('book.originalPrice between :from and :to', { from: priceSorted[0], to: priceSorted[1] })
     }
   }
@@ -191,7 +194,7 @@ export class BookService {
 
       const searchParam = query.text as string;
       const searchParamToLowerCase = searchParam.split('-');
-
+console.log(searchParamToLowerCase);
       searchParamToLowerCase.forEach((element, index) => {
         queryBuilder.andWhere(
           new Brackets((qb) => {
@@ -210,9 +213,9 @@ export class BookService {
     }
   }
 
-  async getBook(title: string): Promise<BookEntity> {
+  async getBook(id:string): Promise<BookEntity> {
     const book = await this.bookRepository.findOne({
-      where: { title, availableBooks: MoreThan(0) },
+      where: { id, availableBooks: MoreThan(0) },
       relations: ['comments', 'comments.parentComment','authors','language','publisher','genre','category'],
     });
     

@@ -12,10 +12,10 @@ const router = Router();
 const authorService = new AuthorService(authorRepository);
 const authorController = new AuthorController(authorService);
 
-router.post('/create', /*authMiddleware, chechRoleGuard*/ validation(AuthorDto), authorController.createAuthor.bind(authorController));
+router.post('/create', authMiddleware, chechRoleGuard, validation(AuthorDto), authorController.createAuthor.bind(authorController));
 router.delete('/:id', authMiddleware, chechRoleGuard, authorController.deleteAuthor.bind(authorController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(AuthorDto), authorController.updateAuthor.bind(authorController));
 router.get('/:id', authMiddleware, chechRoleGuard, authorController.getAuthor.bind(authorController));
-router.get('/all/a', authorController.findAll.bind(authorController));
+router.get('/', authorController.findAll.bind(authorController));
 
 export default router;

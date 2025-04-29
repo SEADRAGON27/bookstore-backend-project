@@ -16,6 +16,6 @@ router.post('/create', authMiddleware, chechRoleGuard, validation(BookAttributes
 router.delete('/:id', authMiddleware, chechRoleGuard, categoryController.deleteCategory.bind(categoryController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(BookAttributesDto), categoryController.updateCategory.bind(categoryController));
 router.get('/:id', authMiddleware, chechRoleGuard, categoryController.getCategory.bind(categoryController));
-router.get('/all', authMiddleware, chechRoleGuard, categoryController.findAll.bind(categoryController));
+router.get('/', categoryController.findAll.bind(categoryController));
 
 export default router;

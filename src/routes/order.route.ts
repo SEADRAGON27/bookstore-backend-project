@@ -17,7 +17,7 @@ const orderController = new OrderController(orderService);
 router.post('/checkout', authMiddleware, validation(CreateOrderDto), orderController.createOrder.bind(orderController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(UpdateBookDto), orderController.updateOrder.bind(orderController));
 router.delete('/:id', authMiddleware, chechRoleGuard, orderController.deleteOrder.bind(orderController));
-router.get('/all', authMiddleware, chechRoleGuard, orderController.findAll.bind(orderController));
+router.get('/', authMiddleware, chechRoleGuard, orderController.findAll.bind(orderController));
 router.post('/confirm/:token', orderController.confirmOrder.bind(orderController));
 
 export default router;

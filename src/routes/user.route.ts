@@ -47,6 +47,6 @@ router.get('/user', authMiddleware, authGuard, userController.getUser.bind(userC
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback',passport.authenticate('google', { session:false }), userController.googleAuthRedirect.bind(userController));
 router.post('/success-google-auth',validation(CreateUserGoogleDto),userController.successGoogleAuth.bind(userController))
-router.get('/confirm-google-email',userController.confirmGoogleEmail.bind(userController))
+//router.get('/confirm-google-email',userController.confirmGoogleEmail.bind(userController))
 
 export default router;

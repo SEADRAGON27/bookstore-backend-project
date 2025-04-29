@@ -19,6 +19,6 @@ router.post('/:id/unfavorite', authMiddleware, authGuard, commentController.dele
 router.put('/:id', authMiddleware, authGuard, validation(CommentDto), commentController.updateComment.bind(commentController));
 router.delete('/:id', authMiddleware, authGuard, commentController.deleteComment.bind(commentController));
 router.post('/:id/add-reply/:bookId', authMiddleware, authGuard, validation(CommentDto), commentController.addReplyToComment.bind(commentController));
-router.get('/all', authMiddleware, commentController.findAll.bind(commentController));
+router.get('/', authMiddleware, commentController.findAll.bind(commentController));
 
 export default router;

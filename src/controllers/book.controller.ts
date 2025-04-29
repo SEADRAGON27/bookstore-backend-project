@@ -41,8 +41,8 @@ export class BookController {
 
   @Log({ params: true })
   async getBook(req: Request, res: Response, next: NextFunction) {
-    const title = req.params.title;
-    const book = await this.bookService.getBook(title);
+    const id = req.params.id;
+    const book = await this.bookService.getBook(id);
 
     res.status(200).json(book);
   }

@@ -16,6 +16,6 @@ router.post('/create', authMiddleware, chechRoleGuard, validation(BookAttributes
 router.delete('/:id', authMiddleware, chechRoleGuard, languageController.deleteLanguage.bind(languageController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(BookAttributesDto), languageController.updateLanguage.bind(languageController));
 router.get('/:id', authMiddleware, chechRoleGuard, languageController.getLanguages.bind(languageController));
-router.get('/all', authMiddleware, chechRoleGuard, languageController.findAll.bind(languageController));
+router.get('/', languageController.findAll.bind(languageController));
 
 export default router;

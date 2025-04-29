@@ -20,8 +20,7 @@ export class OrderService {
   async createOrder(userId: string, createOrderDto: CreateOrderDto) {
     let order = new OrderEntity();
 
-    const bookIds = createOrderDto.books;
-    delete createOrderDto.books;
+    const bookIds = [...createOrderDto.books];
 
     if (userId) order.user = await this.userRepository.findOneBy({ id: userId });
 

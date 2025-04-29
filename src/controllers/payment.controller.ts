@@ -7,20 +7,16 @@ export class PaymentController {
 
   async generatePaymentForm(req: Request, res: Response, next: NextFunction) {
     const orderId = req.params.orderId;
-    const amount = +req.query.amount;
-    const formHtml = await this.paymentService.generatePaymentForm(orderId, amount);
+    const formHtml = await this.paymentService.generatePaymentForm(orderId);
 
     res.status(200).send(formHtml);
   }
 
-  @Log({ body: true })
+  @Log({})
   async handleLiqPayWebook(req: Request, res: Response, next: NextFunction) {
     const webhookData = req.body;
-    const orderId = await this.paymentService.handleLiqPayWebhook(webhookData);
-
-    if (!orderId) {
-      return res.redirect('/books/');
-    }
+    console.log('data', req.body);
+    await this.paymentService.handleLiqPayWebhook(webhookData);
 
     res.sendStatus(200);
   }

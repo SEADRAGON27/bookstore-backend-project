@@ -16,6 +16,6 @@ router.post('/create', authMiddleware, chechRoleGuard, validation(BookAttributes
 router.delete('/:id', authMiddleware, chechRoleGuard, publisherController.deletePublisher.bind(publisherController));
 router.put('/:id', authMiddleware, chechRoleGuard, validation(BookAttributesDto), publisherController.updatePublisher.bind(publisherController));
 router.get('/:id', authMiddleware, chechRoleGuard, publisherController.getPublisher.bind(publisherController));
-router.get('/all', publisherController.findAll.bind(publisherController));
+router.get('/', publisherController.findAll.bind(publisherController));
 
 export default router;

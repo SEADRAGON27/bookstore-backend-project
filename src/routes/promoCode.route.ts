@@ -18,6 +18,6 @@ router.post('/create', authMiddleware, chechRoleGuard, validation(CreatePromoCod
 router.put('/:id', authMiddleware, chechRoleGuard, validation(UpdatePromoCodeDto), promoCodeController.updatePromoCode.bind(promoCodeController));
 router.delete('/:id', authMiddleware, chechRoleGuard, promoCodeController.deletePromoCode.bind(promoCodeController));
 router.post('/check-promo-code', validation(CheckPromoCode), promoCodeController.checkPromoCode.bind(promoCodeController));
-router.get('/all', authMiddleware, chechRoleGuard, promoCodeController.findAll.bind(promoCodeController));
+router.get('/', promoCodeController.findAll.bind(promoCodeController));
 
 export default router;

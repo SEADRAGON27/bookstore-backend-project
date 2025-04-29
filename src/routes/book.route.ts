@@ -19,9 +19,9 @@ const bookController = new BookController(bookService);
 
 router.get('/', authMiddleware, cacheMiddleware, bookController.getBooksOnTheMainPage.bind(bookController));
 router.get('/category/:name', authMiddleware, cacheMiddleware, bookController.getBooksByCategory.bind(bookController));
-router.get('/search', authMiddleware, cacheMiddleware, bookController.searchBook.bind(bookController));
-router.get('/:title', authMiddleware, bookController.getBook.bind(bookController));
-router.post('/create', authMiddleware, /*chechRoleGuard*/ upload.single('image'), validation(BookDto), bookController.createBook.bind(bookController));
+router.get('/search', authMiddleware, bookController.searchBook.bind(bookController));
+router.get('/:id', authMiddleware, bookController.getBook.bind(bookController));
+router.post('/create', authMiddleware, chechRoleGuard, upload.single('image'), validation(BookDto), bookController.createBook.bind(bookController));
 router.put('/:id', authMiddleware, chechRoleGuard, bookController.updateBook.bind(bookController));
 router.delete('/:id', authMiddleware, chechRoleGuard, bookController.deleteBook.bind(bookController));
 router.get('/liked/all', authMiddleware, authGuard, bookController.getBooksLikedByUser.bind(bookController));
